@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include "display.hpp"
+
 // #include <TinyGPS++.h>
 // #include <HardwareSerial.h>
 //
@@ -51,25 +53,27 @@ void onReceive(int packetSize);
 
 void setup() {
   Serial.begin(115200);
-  while (!Serial)
-    ; // if just the the basic function, must connect to a computer
+  // while (!Serial)
+  //   ; // if just the the basic function, must connect to a computer
 
-  SPI.begin(SCK, MISO, MOSI, SS);
-  LoRa.setPins(SS, RST, DI0);
+  // SPI.begin(SCK, MISO, MOSI, SS);
+  // LoRa.setPins(SS, RST, DI0);
 
-  Serial.println("LoRa Receiver Callback");
+  // Serial.println("LoRa Receiver Callback");
 
-  if (!LoRa.begin(BAND)) {
-    Serial.println("Starting LoRa failed!");
-    while (1)
-      ;
-  }
+  // if (!LoRa.begin(BAND)) {
+  //   Serial.println("Starting LoRa failed!");
+  //   while (1)
+  //     ;
+  // }
 
-  // register the receive callback
-  LoRa.onReceive(onReceive);
+  // // register the receive callback
+  // LoRa.onReceive(onReceive);
 
-  // put the radio into receive mode
-  LoRa.receive();
+  // // put the radio into receive mode
+  // LoRa.receive();
+  displaySetup();
+
 }
 
 void loop() {
