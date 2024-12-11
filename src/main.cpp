@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "display.hpp"
+#include "Communication.hpp"
 
 // #include <TinyGPS++.h>
 // #include <HardwareSerial.h>
@@ -26,10 +27,15 @@
 //   delay(1000);
 // }
 
-void onReceive(int packetSize);
+byte address = 0x01;
+Communication communication(address);
 
 void setup() {
   Serial.begin(115200);
   displaySetup();
+  communication.setup();
+}
+
+void loop() {
 
 }

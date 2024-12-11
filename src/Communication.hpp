@@ -36,10 +36,18 @@ public:
 
 private:
     HaS_Address _localAddress;
+    static Communication* _instance;
 
     void onReceive(int packetSize);
     LoRaMessage processMessage(int packetSize);
     bool isMessageValid(LoRaMessage);
     void processPairingRequest(byte sender);
     void processPairingResponse(byte sender);
+    void printMessage(LoRaMessage message);
+
+    static void onReceiveBridge(int packetSize) {
+      if (_instance) {
+        _instance->onReceive(packetSize);
+      }
+    }
 };
