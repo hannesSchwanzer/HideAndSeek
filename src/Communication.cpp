@@ -23,6 +23,9 @@ void Communication::setup() {
 
   // Register onReceive Callback
   LoRa.onReceive(onReceiveBridge);
+  LoRa.receive();
+
+  Serial.println("LoRa is in receive mode.");
 }
 
 void Communication::sendPairingRequest() {
@@ -40,7 +43,8 @@ void Communication::sendGPSData(int longitude, int latidute) {
 }
 
 void Communication::sendMessage(LoRaMessage message) {
-  LoRa.print("hello ");
+  Serial.println("Sending Message");
+
   LoRa.beginPacket();
   LoRa.print(message.senderAddress);
   LoRa.print(static_cast<uint8_t>(message.messageType));

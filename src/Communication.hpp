@@ -34,6 +34,10 @@ public:
     void sendGPSData(int longitude, int latidute);
     void sendMessage(LoRaMessage message);
 
+    static void setInstance(Communication* instance) {
+        _instance = instance;
+    }
+
 private:
     HaS_Address _localAddress;
     static Communication* _instance;

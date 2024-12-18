@@ -32,10 +32,11 @@ Communication communication(address);
 
 void setup() {
   Serial.begin(115200);
-  displaySetup();
+  // displaySetup();
   communication.setup();
 }
 
 void loop() {
-
+  communication.sendGPSData(1,2);
+  delay(5000);
 }
