@@ -4,28 +4,36 @@
 #include <functional>
 
 Communication *Communication::_instance;
+QueueHandle_t Communication::messageQueue;
 
 Communication::Communication(byte localAddress) : _localAddress(localAddress) {
   _instance = this;
 }
 
-void Communication::setup() {
+bool Communication::setup() {
   // Setup LoRa communication and set pins
   SPI.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_SS);
   LoRa.setPins(LORA_SS, LORA_RST, LORA_DI0);
 
   if (!LoRa.begin(LORA_BAND)) {
     Serial.println("Starting LoRa failed!");
-    while (1)
-      ; // TODO: Replace with exception
+    return false;
   }
   Serial.println("Started LoRa successfully!");
+
+  // Initialize the message queue
+  messageQueue = xQueueCreate(QUEUE_SIZE, sizeof(LoRaMessage));
+  if (messageQueue == nullptr) {
+      Serial.println("Failed to create message queue!");
+    return false;
+  }
 
   // Register onReceive Callback
   LoRa.onReceive(onReceiveBridge);
   LoRa.receive();
 
   Serial.println("LoRa is in receive mode.");
+  return true;
 }
 
 void Communication::sendPairingRequest() {
@@ -53,13 +61,15 @@ void Communication::sendMessage(LoRaMessage message) {
     LoRa.print(message.payload[i]);
   }
   LoRa.endPacket();
+
+  // Switch back to receive mode
+  LoRa.receive();
 }
 
-LoRaMessage Communication::processMessage(int packetSize) {
-  LoRaMessage message;
+bool Communication::processMessage(int packetSize, LoRaMessage& message) {
   // read packet
   if (packetSize < HEADER_SIZE || packetSize > HEADER_SIZE + PAYLOAD_SIZE) {
-    // TODO: Throw Exception
+    return false;
   }
 
   message.senderAddress = LoRa.read();
@@ -67,14 +77,14 @@ LoRaMessage Communication::processMessage(int packetSize) {
   message.payloadLength = LoRa.read();
 
   if (packetSize - HEADER_SIZE != message.payloadLength) {
-    // TODO: Throw exception
+    return false;
   }
 
   for (int i = 0; i < packetSize - HEADER_SIZE; i++) {
     message.payload[i] = LoRa.read();
   }
 
-  return message;
+  return true;
 }
 
 void Communication::processPairingRequest(byte sender) {
@@ -88,16 +98,19 @@ void Communication::processPairingResponse(byte sender) {
 void Communication::onReceive(int packetSize) {
   Serial.print("Received packet '");
 
-  LoRaMessage message = processMessage(packetSize); // TODO: Handle Exceptions
-  if (!isMessageValid(message)) {
+  LoRaMessage message;
+  bool processing_valid = processMessage(packetSize, message); // TODO: Handle Exceptions
+  if (!processing_valid || !isMessageValid(message)) {
     return;
   }
 
-  printMessage(message);
-  // TODO: Message to queue?
+  // Add message to the queue
+  if (xQueueSend(messageQueue, &message, 0) != pdTRUE) {
+      Serial.println("Queue full! Dropping message."); //TODO: 
+  }
 }
 
-bool Communication::isMessageValid(LoRaMessage) {
+bool Communication::isMessageValid(LoRaMessage& message) {
   return true; // TODO:
 }
 
@@ -114,4 +127,14 @@ void Communication::printMessage(LoRaMessage message) {
   for (int i = 0; i < message.payloadLength; i++) {
     Serial.print((byte)message.payload[i]);
   }
+}
+
+// Check if there are messages in the queue
+bool Communication::hasMessage() {
+    return uxQueueMessagesWaiting(messageQueue) > 0;
+}
+
+// Retrieve the next message from the queue
+bool Communication::getNextMessage(LoRaMessage& message) {
+    return xQueueReceive(messageQueue, &message, 0) == pdTRUE;
 }
