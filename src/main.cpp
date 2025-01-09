@@ -3,6 +3,13 @@
 #include "pins.hpp"
 #include <Wire.h>
 #include <SPI.h>
+#include "Communication.hpp"
+
+#define MODE 1
+// 0: Receive; 1: send
+ byte address = 0x01;
+ Communication communication(address);
+
 float ownLat = 50.098092;
 float ownLon = 8.215985;
 byte currentAzimuth = 0;
@@ -26,8 +33,13 @@ void setup() {
     {50.104192, 8.145831}
   };
   display.drawMap(otherCoords, 4, 0);
+  communication.setup();
+
+
+  
 }
 
+#if MODE == 0
 void loop() {
   float otherCoords[][2] = 
   {
@@ -36,7 +48,15 @@ void loop() {
     {50.104345,  8.23314},
     {50.104192, 8.145831}
   };
-  
+  while (communication.hasMessage()) {
+    Serial.println("New message");
+    LoRaMessage message;
+    if (communication.getNextMessage(message)) {
+      communication.printMessage(message);
+    } else {
+      Serial.println("Error retrieving message from queue");
+    }
+  }
   
 
   compass.read();
@@ -45,5 +65,13 @@ void loop() {
 
   
   display.drawMap(otherCoords, 4, currentAzimuth);
-  delay(100);
+
+  delay(10000);
 }
+#elif MODE == 1
+void loop() {
+  communication.sendGPSData(4,2);
+  delay(1000);
+}
+#endif
+
