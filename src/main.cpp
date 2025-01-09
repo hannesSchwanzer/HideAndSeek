@@ -1,39 +1,49 @@
-#include <Arduino.h>
-#include <SPI.h>
 #include "display.hpp"
 #include <QMC5883LCompass.h>
+#include "pins.hpp"
+#include <Wire.h>
+#include <SPI.h>
+float ownLat = 50.098092;
+float ownLon = 8.215985;
+byte currentAzimuth = 0;
+Display display(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCK, TFT_RST, ownLat, ownLon);
 
 QMC5883LCompass compass;
-byte currentAzimuth = 0;
 
 void setup() {
   Serial.begin(115200);
-  compass.setADDR(0x0D);
+  display.displaySetup();
   compass.init();
-  displaySetup();
+  compass.calibrate();
 
 
-  float otherCoords[][2] = {
+
+  float otherCoords[][2] = 
+  {
     {50.099248, 8.214117}, 
-    {50.09549318153879, 8.262105363437584}, 
-    {50.104345996335,  8.233146693343492},
-    {50.10419249325381, 8.145831915331785}
-};
-  drawMap(otherCoords, 4, 0);
-
+    {50.095493, 8.262105}, 
+    {50.104345,  8.23314},
+    {50.104192, 8.145831}
+  };
+  display.drawMap(otherCoords, 4, 0);
 }
 
 void loop() {
-  float otherCoords[][2] = {
+  float otherCoords[][2] = 
+  {
     {50.099248, 8.214117}, 
-    {50.09549318153879, 8.262105363437584}, 
-    {50.104345996335,  8.233146693343492},
-    {50.10419249325381, 8.145831915331785}
+    {50.095493, 8.262105}, 
+    {50.104345,  8.23314},
+    {50.104192, 8.145831}
   };
+  
+  
+
   compass.read();
   currentAzimuth = compass.getAzimuth();
-
   printf("Azimuth: %d\n", currentAzimuth);
-  drawMap(otherCoords, 4, currentAzimuth);
-  delay(1000);
+
+  
+  display.drawMap(otherCoords, 4, currentAzimuth);
+  delay(100);
 }
