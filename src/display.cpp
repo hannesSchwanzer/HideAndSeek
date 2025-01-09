@@ -1,28 +1,28 @@
-//Pin for ESP32
-#define TFT_CS         25  //case select connect to pin 5
-#define TFT_RST        13 //reset connect to pin 15
-#define TFT_DC         12 //AO connect to pin 32  (not sure that this is really used)  try pin 25
-#define TFT_MOSI       21 //Data = SDA connect to pin 23
-#define TFT_SCLK       22 //Clock = SCK connect to pin 18
-
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_ST7735.h> // Hardware-specific library for ST7735
-#include <SPI.h>
+#include <SPI.h> 
 #include <math.h>
+#include "pins.hpp"
+#include "display.hpp"
 
-// For ST7735-based displays, we will use this call
-Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCLK, TFT_RST);
+Display::Display(uint8_t cs, uint8_t dc, uint8_t sda, uint8_t sck,  uint8_t rst, float lat, float lon) 
+  : tft(cs, dc, sda, sck, rst){
+    ownLat = lat;
+    ownLon = lon;
+  }
 
-float ownLat = 50.098422;
-float ownLon = 8.216903;
+// Getter und Setter für Position
+void Display::setOwnPosition(float lat, float lon) {
+    ownLat = lat;
+    ownLon = lon;
+}
 
-#define SCREEN_WIDTH  128
-#define SCREEN_HEIGHT 160
+void Display::getOwnPosition(float &lat, float &lon) const {
+    lat = ownLat;
+    lon = ownLon;
+}
 
-#define MAX_DISTANCE 1000
-
-
-float haversine(float lat1, float lon1, float lat2, float lon2) {
+float Display::haversine(float lat1, float lon1, float lat2, float lon2) {
   float R = 6371000; // Erdradius in Metern
   float dLat = radians(lat2 - lat1);
   float dLon = radians(lon2 - lon1);
@@ -34,43 +34,62 @@ float haversine(float lat1, float lon1, float lat2, float lon2) {
 }
 
 
-void transformToScreen(float lat, float lon, int &x, int &y) {
-  float distance = haversine(ownLat, ownLon, lat, lon);
-  float angle = atan2(lat - ownLat, lon - ownLon); // Richtung berechnen
+void Display::transformAndRotate(float lat, float lon, int &x, int &y, byte currentAzimuth) {
+    float distance = haversine(ownLat, ownLon, lat, lon);
+    float angle = atan2(lat - ownLat, lon - ownLon); // Richtung berechnen
+    // Kombiniere die Rotationen
+    float azimuthRad = radians(currentAzimuth);
+    printf("Azimuth - rad: %d\n", currentAzimuth);
+    float totalAngle = angle + azimuthRad;
+    if (distance > MAX_DISTANCE) distance = MAX_DISTANCE;
 
-  // Begrenze Distanz auf MAX_DISTANCE
-  if (distance > MAX_DISTANCE) distance = MAX_DISTANCE;
+    // Normalisiere Distanz auf den Bildschirmradius (vorläufig)
+    float normDistance = (distance / MAX_DISTANCE) * (SCREEN_WIDTH / 2 - 1); // Randabstand
 
-  // Normalisiere auf Bildschirmkoordinaten
-  float normDistance = (distance / MAX_DISTANCE) * (SCREEN_WIDTH / 2 - 10); // Randabstand
-  x = SCREEN_WIDTH / 2 + normDistance * cos(angle);
-  y = SCREEN_HEIGHT / 2 - normDistance * sin(angle); // y-Achse invertiert
+    // Transformiere und rotiere
+    float rotatedX = normDistance * cos(totalAngle) - normDistance * sin(totalAngle);
+    float rotatedY = normDistance * sin(totalAngle) + normDistance * cos(totalAngle);
+
+    // Verschiebe ins Bildschirmkoordinatensystem
+    x = SCREEN_WIDTH / 2 + rotatedX;
+    y = SCREEN_HEIGHT / 2 - rotatedY;
+
+    // Begrenze die Pixelkoordinaten, falls sie außerhalb des sichtbaren Bereichs liegen
+    x = max(0, min(SCREEN_WIDTH - 1, x));
+    y = max(0, min(SCREEN_HEIGHT - 1, y));
+    //printf("x: %d, y: %d\n", x, y);
 }
 
-void drawMap(float coords[][2], int numCoords) {
+
+
+void Display::drawMap(float coords[][2], int numCoords, byte azimuth) {
   // Eigene Position zeichnen (Pfeil in der Mitte)
+  //SPI.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
+  tft.fillScreen(ST7735_BLACK);
+
   tft.fillTriangle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 5,
                    SCREEN_WIDTH / 2 - 5, SCREEN_HEIGHT / 2 + 5,
                    SCREEN_WIDTH / 2 + 5, SCREEN_HEIGHT / 2 + 5,
                    ST7735_RED);
-  
+  printf("Own position drawn\n");
+  printf("Own Lat: %f, Own Lon: %f\n", ownLat, ownLon);
   // Andere Koordinaten zeichnen
   for (int i = 0; i < numCoords; i++) {
     int x, y;
-    transformToScreen(coords[i][0], coords[i][1], x, y);
+    transformAndRotate(coords[i][0], coords[i][1], x, y, azimuth);
     tft.fillCircle(x, y, 3, ST7735_GREEN); // Punkte darstellen
+  
   }
+  printf("Map drawn\n");
+  
+  //SPI.endTransaction();
+
 }
-void displaySetup(){
-    tft.initR(INITR_BLACKTAB); // Display initialisieren
+
+void Display::displaySetup(){
+
+    tft.initR(INITR_BLACKTAB);
     tft.fillScreen(ST7735_BLACK);
 
-    float otherCoords[][2] = {
-    {50.099248, 8.214117}, 
-    {50.09549318153879, 8.262105363437584}, 
-    {50.104345996335,  8.233146693343492},
-    {50.10419249325381, 8.145831915331785}
-
-  };
-    drawMap(otherCoords, 4);
+     // Display initialisiere
 }
