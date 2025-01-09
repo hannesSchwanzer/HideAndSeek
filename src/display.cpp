@@ -2,7 +2,7 @@
 #include <Adafruit_ST7735.h> // Hardware-specific library for ST7735
 #include <SPI.h> 
 #include <math.h>
-#include "pins.hpp"
+#include "Pins.hpp"
 #include "display.hpp"
 
 Display::Display(uint8_t cs, uint8_t dc, uint8_t sda, uint8_t sck,  uint8_t rst, float lat, float lon) 

@@ -1,6 +1,6 @@
 #include "display.hpp"
 #include <QMC5883LCompass.h>
-#include "pins.hpp"
+#include "Pins.hpp"
 #include <Wire.h>
 #include <SPI.h>
 #include "Communication.hpp"
