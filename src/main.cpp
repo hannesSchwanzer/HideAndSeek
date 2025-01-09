@@ -3,7 +3,7 @@
 #include "Communication.hpp"
 
 // 0: Receive; 1: send
-#define MODE 0
+#define MODE 1
 
 
 byte address = 0x01;
@@ -18,6 +18,7 @@ void setup() {
 #if MODE == 0
 void loop() {
   while (communication.hasMessage()) {
+    Serial.println("New message");
     LoRaMessage message;
     if (communication.getNextMessage(message)) {
       communication.printMessage(message);
@@ -26,11 +27,11 @@ void loop() {
     }
   }
 
-  delay(1000);
+  delay(10000);
 }
 #elif MODE == 1
 void loop() {
-  communication.sendGPSData(1,2);
-  delay(5000);
+  communication.sendGPSData(4,2);
+  delay(1000);
 }
 #endif

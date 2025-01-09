@@ -48,18 +48,18 @@ void Communication::sendGPSData(int longitude, int latidute) {
 
   std::memcpy(message.payload, &longitude, sizeof(longitude));
   std::memcpy(message.payload + sizeof(longitude), &latidute, sizeof(latidute));
+  
+  sendMessage(message);
 }
 
 void Communication::sendMessage(LoRaMessage message) {
   Serial.println("Sending Message");
 
   LoRa.beginPacket();
-  LoRa.print(message.senderAddress);
-  LoRa.print(static_cast<uint8_t>(message.messageType));
-  LoRa.print(message.payloadLength);
-  for (int i = 0; i < message.payloadLength; i++) {
-    LoRa.print(message.payload[i]);
-  }
+  LoRa.write(message.senderAddress);                     // Send as binary
+  LoRa.write(static_cast<uint8_t>(message.messageType)); // Send as binary
+  LoRa.write(message.payloadLength);                    // Send as binary
+  LoRa.write((uint8_t*)message.payload, message.payloadLength); // Send the payload
   LoRa.endPacket();
 
   // Switch back to receive mode
@@ -67,24 +67,23 @@ void Communication::sendMessage(LoRaMessage message) {
 }
 
 bool Communication::processMessage(int packetSize, LoRaMessage& message) {
-  // read packet
-  if (packetSize < HEADER_SIZE || packetSize > HEADER_SIZE + PAYLOAD_SIZE) {
-    return false;
-  }
+    if (packetSize < HEADER_SIZE) {
+        return false; // Not enough data for a header
+    }
 
-  message.senderAddress = LoRa.read();
-  message.messageType = static_cast<LoRaMessageType>(LoRa.read());
-  message.payloadLength = LoRa.read();
+    message.senderAddress = (uint8_t)LoRa.read(); // Read as binary
+    message.messageType = static_cast<LoRaMessageType>((uint8_t)LoRa.read());
+    message.payloadLength = (uint8_t)LoRa.read();
 
-  if (packetSize - HEADER_SIZE != message.payloadLength) {
-    return false;
-  }
+    if (packetSize - HEADER_SIZE != message.payloadLength || message.payloadLength > PAYLOAD_SIZE) {
+        return false; // Payload length mismatch or exceeds buffer size
+    }
 
-  for (int i = 0; i < packetSize - HEADER_SIZE; i++) {
-    message.payload[i] = LoRa.read();
-  }
+    for (int i = 0; i < message.payloadLength; i++) {
+        message.payload[i] = (uint8_t)LoRa.read(); // Read as binary
+    }
 
-  return true;
+    return true;
 }
 
 void Communication::processPairingRequest(byte sender) {
@@ -96,11 +95,13 @@ void Communication::processPairingResponse(byte sender) {
 }
 
 void Communication::onReceive(int packetSize) {
-  Serial.print("Received packet '");
+  Serial.println("Received packet '");
 
   LoRaMessage message;
   bool processing_valid = processMessage(packetSize, message); // TODO: Handle Exceptions
   if (!processing_valid || !isMessageValid(message)) {
+  Serial.println("Message invalid");
+  Serial.println(processing_valid);
     return;
   }
 
