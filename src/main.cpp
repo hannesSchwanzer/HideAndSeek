@@ -9,7 +9,6 @@
 // 0: Receive; 1: send
  byte address = 0x01;
  Communication communication(address);
-
 float ownLat = 50.098092;
 float ownLon = 8.215985;
 byte currentAzimuth = 0;
@@ -34,13 +33,8 @@ void setup() {
   };
   display.drawMap(otherCoords, 4, 0);
   communication.setup();
-
-
-  
 }
-
-#if MODE == 0
-void loop() {
+void loopDisplay(){
   float otherCoords[][2] = 
   {
     {50.099248, 8.214117}, 
@@ -48,6 +42,16 @@ void loop() {
     {50.104345,  8.23314},
     {50.104192, 8.145831}
   };
+  compass.read();
+  currentAzimuth = compass.getAzimuth();
+  printf("Azimuth: %d\n", currentAzimuth);
+
+  
+  display.drawMap(otherCoords, 4, currentAzimuth);
+}
+void loopCommunication(){
+
+#if MODE == 0
   while (communication.hasMessage()) {
     Serial.println("New message");
     LoRaMessage message;
@@ -57,21 +61,15 @@ void loop() {
       Serial.println("Error retrieving message from queue");
     }
   }
-  
-
-  compass.read();
-  currentAzimuth = compass.getAzimuth();
-  printf("Azimuth: %d\n", currentAzimuth);
-
-  
-  display.drawMap(otherCoords, 4, currentAzimuth);
-
-  delay(10000);
-}
 #elif MODE == 1
-void loop() {
   communication.sendGPSData(4,2);
-  delay(1000);
-}
 #endif
+}
+
+
+void loop() {
+  //loopCommunication();
+  loopDisplay();
+  delay(100);
+}
 

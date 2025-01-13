@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "cmath": "cpp",
-        "cstddef": "cpp"
+        "cstddef": "cpp",
+        "queue": "cpp"
     }
 }

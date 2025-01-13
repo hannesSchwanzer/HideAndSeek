@@ -1,5 +1,4 @@
-#ifndef DISPLAY_H
-#define DISPLAY_H
+#pragma once 
 
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
@@ -29,5 +28,3 @@ class Display {
     void setOwnPosition(float lat, float lon);
     void getOwnPosition(float &lat, float &lon) const;
 };
-
-#endif // DISPLAY_H

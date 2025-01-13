@@ -6,12 +6,8 @@
 #include <cstdint>
 #include <queue>
 #include "Pins.hpp"
-
-#define PAYLOAD_SIZE 100
-#define HEADER_SIZE 3
-#define QUEUE_SIZE 10 // Maximum number of messages in the queue
-
-typedef uint8_t HaS_Address;
+#include "Globals.hpp"
+#include "configValues.hpp"
 
 enum class LoRaMessageType : uint8_t {
     PAIRING_REQUEST = 1,
