@@ -1,12 +1,20 @@
 #include "Communication.hpp"
-#include <cstdint>
 #include <cstring>
 #include <functional>
+#include "Globals.hpp"
+#include "configValues.hpp"
+#include "esp_err.h"
+#include "esp_wifi_types.h"
+#include "esp_wifi.h"
+#include "Pins.hpp"
+
+#define MAC_ADDRESS_SIZE 6
 
 Communication *Communication::_instance;
 QueueHandle_t Communication::messageQueue;
 
-Communication::Communication(byte localAddress) : _localAddress(localAddress) {
+Communication::Communication() {
+  _localAddress = 0;
   _instance = this;
 }
 
@@ -16,15 +24,21 @@ bool Communication::setup() {
   LoRa.setPins(LORA_SS, LORA_RST, LORA_DI0);
 
   if (!LoRa.begin(LORA_BAND)) {
+#ifdef debug
     Serial.println("Starting LoRa failed!");
+#endif
     return false;
   }
+#ifdef debug
   Serial.println("Started LoRa successfully!");
+#endif
 
   // Initialize the message queue
   messageQueue = xQueueCreate(QUEUE_SIZE, sizeof(LoRaMessage));
   if (messageQueue == nullptr) {
+#ifdef debug
       Serial.println("Failed to create message queue!");
+#endif
     return false;
   }
 
@@ -32,13 +46,54 @@ bool Communication::setup() {
   LoRa.onReceive(onReceiveBridge);
   LoRa.receive();
 
+#ifdef debug
   Serial.println("LoRa is in receive mode.");
+#endif
   return true;
 }
 
-void Communication::sendPairingRequest() {
-  // TODO: Implement
+void Communication::setLocalAddress(HaS_Address localAddress) {
+  this->_localAddress = localAddress;
 }
+
+void Communication::sendJoiningRequest() {
+  uint8_t macAddress[MAC_ADDRESS_SIZE];
+  esp_err_t ret = esp_wifi_get_mac(WIFI_IF_STA, macAddress);
+  if (ret != ESP_OK) {
+    // TODO: Error?
+  }
+
+  LoRaMessage message;
+  message.messageType = LoRaMessageType::JOINING_REQUEST;
+  message.senderAddress = 0;
+  message.payloadLength = MAC_ADDRESS_SIZE;
+  std::memcpy(message.payload, macAddress, MAC_ADDRESS_SIZE);
+
+  sendMessage(message);
+}
+
+
+void Communication::sendJoiningRequestAcceptance(uint8_t* macAddress, HaS_Address assignedAddress) {
+  LoRaMessage message;
+  message.messageType = LoRaMessageType::JOINING_REQUEST_ACCPEPTANCE;
+  message.senderAddress = _localAddress;
+  message.payloadLength = MAC_ADDRESS_SIZE + sizeof(HaS_Address);
+  std::memcpy(message.payload, macAddress, MAC_ADDRESS_SIZE);
+  std::memcpy(message.payload + MAC_ADDRESS_SIZE, assignedAddress, sizeof(HaS_Address));
+
+  sendMessage(message);
+}
+
+void Communication::sendAcceptanceAcknoledgment(HaS_Address receiverAddress) {
+  LoRaMessage message;
+  message.messageType = LoRaMessageType::ACCEPTANCE_ACKNOLEDGMENT;
+  message.senderAddress = _localAddress;
+  message.payloadLength = sizeof(HaS_Address);
+  std::memcpy(message.payload, receiverAddress, sizeof(HaS_Address));
+
+  sendMessage(message);
+}
+
 
 void Communication::sendGPSData(int longitude, int latidute) {
   LoRaMessage message;
@@ -52,8 +107,10 @@ void Communication::sendGPSData(int longitude, int latidute) {
   sendMessage(message);
 }
 
-void Communication::sendMessage(LoRaMessage message) {
+void Communication::sendMessage(LoRaMessage& message) {
+#ifdef debug
   Serial.println("Sending Message");
+#endif
 
   LoRa.beginPacket();
   LoRa.write(message.senderAddress);                     // Send as binary
@@ -86,28 +143,25 @@ bool Communication::processMessage(int packetSize, LoRaMessage& message) {
     return true;
 }
 
-void Communication::processPairingRequest(byte sender) {
-  // TODO: Implement
-}
-
-void Communication::processPairingResponse(byte sender) {
-  // TODO: Implement
-}
-
 void Communication::onReceive(int packetSize) {
+#ifdef DEBUG
   Serial.println("Received packet '");
+#endif
 
   LoRaMessage message;
   bool processing_valid = processMessage(packetSize, message); // TODO: Handle Exceptions
   if (!processing_valid || !isMessageValid(message)) {
+#ifdef DEBUG
   Serial.println("Message invalid");
-  Serial.println(processing_valid);
+#endif
     return;
   }
 
   // Add message to the queue
   if (xQueueSend(messageQueue, &message, 0) != pdTRUE) {
+#ifdef DEBUG
       Serial.println("Queue full! Dropping message."); //TODO: 
+#endif
   }
 }
 

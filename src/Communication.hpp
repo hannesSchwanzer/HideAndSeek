@@ -5,15 +5,16 @@
 #include <SPI.h>
 #include <cstdint>
 #include <queue>
-#include "Pins.hpp"
 #include "Globals.hpp"
-#include "configValues.hpp"
 
 enum class LoRaMessageType : uint8_t {
     PAIRING_REQUEST = 1,
     GPS_DATA,
     GAME_START,
     PLAYER_ADRESSES,
+    JOINING_REQUEST,
+    JOINING_REQUEST_ACCPEPTANCE,
+    ACCEPTANCE_ACKNOLEDGMENT,
     OTHER,
 };
 
@@ -26,11 +27,14 @@ struct LoRaMessage {
 
 class Communication {
 public:
-    Communication(byte localAddress);
+    Communication();
     bool setup();
-    void sendPairingRequest();
+    void setLocalAddress(HaS_Address localAddress);
+    void sendJoiningRequest();
+    void sendJoiningRequestAcceptance(uint8_t* macAddress, HaS_Address assignedAddress);
+    void sendAcceptanceAcknoledgment(HaS_Address receiverAddress);
     void sendGPSData(int longitude, int latidute);
-    void sendMessage(LoRaMessage message);
+    void sendMessage(LoRaMessage& message);
 
     void printMessage(LoRaMessage message);
     static void setInstance(Communication* instance) {
@@ -48,8 +52,6 @@ private:
     void onReceive(int packetSize);
     bool processMessage(int packetSize, LoRaMessage& message);
     bool isMessageValid(LoRaMessage& message);
-    void processPairingRequest(byte sender);
-    void processPairingResponse(byte sender);
 
     static void onReceiveBridge(int packetSize) {
       if (_instance) {

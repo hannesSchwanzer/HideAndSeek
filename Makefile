@@ -19,4 +19,6 @@ clean:
 compiledb:
 	$(PLATFORMIO_CLI) run -t compiledb
 
+uploadAndMonitor: upload monitor
+
 default: all
