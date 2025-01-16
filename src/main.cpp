@@ -4,6 +4,8 @@
 #include <Wire.h>
 #include <SPI.h>
 #include "Communication.hpp"
+#include "GPSHandler.cpp"
+
 
 #define MODE 1
 // 0: Receive; 1: send
@@ -14,6 +16,19 @@ float ownLon = 8.215985;
 byte currentAzimuth = 0;
 Display display(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCK, TFT_RST, ownLat, ownLon);
 
+
+// HardwareSerial für GPS
+HardwareSerial gpsSerial(1); // RX=17, TX=23
+// GPSHandler-Objekt erstellen
+GPSHandler gpsHandler(&gpsSerial);
+unsigned long previousGPSMillis = 0;
+unsigned long previousCompassMillis = 0;
+
+const unsigned long gpsInterval = 10000;     // GPS-Intervall: 10 Sekunden
+const unsigned long compassInterval = 2000;  // Kompass-Intervall: 5 Sekunden
+
+
+
 QMC5883LCompass compass;
 
 void setup() {
@@ -21,6 +36,11 @@ void setup() {
   display.displaySetup();
   compass.init();
   compass.calibrate();
+  // GPSHandler initialisieren
+  gpsHandler.begin();
+
+  // Kompass initialisieren und kalibrieren
+  gpsHandler.calibrateCompass();
 
 
 
@@ -71,5 +91,42 @@ void loop() {
   //loopCommunication();
   loopDisplay();
   delay(100);
+      unsigned long currentMillis = millis();
+
+  // GPS-Daten alle 10 Sekunden auslesen
+    if (currentMillis - previousGPSMillis >= gpsInterval) {
+        previousGPSMillis = currentMillis;
+
+        // Latitude und Longitude mit den neuen Methoden ausgeben
+        double latitude = gpsHandler.getLatitude();
+        double longitude = gpsHandler.getLongitude();
+
+        Serial.println("GPS-Daten:");
+        Serial.print("Latitude: ");
+        Serial.println(latitude, 6);
+        Serial.print("Longitude: ");
+        Serial.println(longitude, 6);
+
+        if (latitude == 0.0 && longitude == 0.0) {
+            Serial.println("Keine gültigen GPS-Daten verfügbar.");
+        }
+    }
+
+       // Kompassdaten alle 5 Sekunden auslesen
+    if (currentMillis - previousCompassMillis >= compassInterval) {
+        previousCompassMillis = currentMillis;
+
+        // Kompassrichtung als Azimut holen
+        float heading = gpsHandler.getCompassHeading();
+        Serial.print("Kompassrichtung: ");
+        Serial.print(heading);  // Azimut in Grad ausgeben
+        Serial.println("°");
+
+        // Kompassrichtung als Text (z.B. N, NE, S, etc.)
+        char direction[3];
+        gpsHandler.getCompassDirection(direction);
+        Serial.print("Kompassrichtung (Text): ");
+        Serial.println(direction);
+    }
 }
 
