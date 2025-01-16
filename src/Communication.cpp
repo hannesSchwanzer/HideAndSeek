@@ -79,7 +79,7 @@ void Communication::sendJoiningRequestAcceptance(uint8_t* macAddress, HaS_Addres
   message.senderAddress = _localAddress;
   message.payloadLength = MAC_ADDRESS_SIZE + sizeof(HaS_Address);
   std::memcpy(message.payload, macAddress, MAC_ADDRESS_SIZE);
-  std::memcpy(message.payload + MAC_ADDRESS_SIZE, assignedAddress, sizeof(HaS_Address));
+  std::memcpy(message.payload + MAC_ADDRESS_SIZE, &assignedAddress, sizeof(HaS_Address));
 
   sendMessage(message);
 }
@@ -89,7 +89,7 @@ void Communication::sendAcceptanceAcknoledgment(HaS_Address receiverAddress) {
   message.messageType = LoRaMessageType::ACCEPTANCE_ACKNOLEDGMENT;
   message.senderAddress = _localAddress;
   message.payloadLength = sizeof(HaS_Address);
-  std::memcpy(message.payload, receiverAddress, sizeof(HaS_Address));
+  std::memcpy(message.payload, &receiverAddress, sizeof(HaS_Address));
 
   sendMessage(message);
 }

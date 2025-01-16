@@ -3,7 +3,7 @@
 #include <SPI.h> 
 #include <math.h>
 #include "Pins.hpp"
-#include "display.hpp"
+#include "Display.hpp"
 
 Display::Display(uint8_t cs, uint8_t dc, uint8_t sda, uint8_t sck,  uint8_t rst, float lat, float lon) 
   : tft(cs, dc, sda, sck, rst){

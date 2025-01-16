@@ -1,4 +1,5 @@
 #include "Game.hpp"
+#include "Pins.hpp"
 
 
 
@@ -47,7 +48,7 @@ void Game::loopGame(){
     
     switch(state){
         
-        case INIT:
+        case INIT:;
     }
 }
 

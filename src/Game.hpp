@@ -1,7 +1,7 @@
 #pragma once 
 
 #include "Communication.hpp"
-#include "display.hpp"
+#include "Display.hpp"
 #include "configValues.hpp"
 #include "Player.hpp"
 #include "Globals.hpp"

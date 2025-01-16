@@ -1,4 +1,4 @@
-#include "display.hpp"
+#include "Display.hpp"
 #include <QMC5883LCompass.h>
 #include "Pins.hpp"
 #include <Wire.h>
@@ -8,7 +8,7 @@
 #define MODE 1
 // 0: Receive; 1: send
  byte address = 0x01;
- Communication communication(address);
+Communication communication;
 float ownLat = 50.098092;
 float ownLon = 8.215985;
 byte currentAzimuth = 0;
