@@ -35,6 +35,7 @@ public:
     void sendAcceptanceAcknoledgment(HaS_Address receiverAddress);
     void sendGPSData(int longitude, int latidute);
     void sendMessage(LoRaMessage& message);
+    void parseJoiningRequestAcceptance(uint8_t* macAddress, HaS_Address* assignedAddress);
 
     void printMessage(LoRaMessage message);
     static void setInstance(Communication* instance) {

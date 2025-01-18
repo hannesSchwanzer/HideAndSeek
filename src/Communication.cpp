@@ -8,7 +8,6 @@
 #include "esp_wifi.h"
 #include "Pins.hpp"
 
-#define MAC_ADDRESS_SIZE 6
 
 Communication *Communication::_instance;
 QueueHandle_t Communication::messageQueue;
