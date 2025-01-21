@@ -5,22 +5,9 @@
 #include "Pins.hpp"
 #include "Display.hpp"
 
-Display::Display(uint8_t cs, uint8_t dc, uint8_t sda, uint8_t sck,  uint8_t rst, float lat, float lon) 
-  : tft(cs, dc, sda, sck, rst){
-    ownLat = lat;
-    ownLon = lon;
-  }
+Display::Display(uint8_t cs, uint8_t dc, uint8_t sda, uint8_t sck,  uint8_t rst) 
+  : tft(cs, dc, sda, sck, rst){}
 
-// Getter und Setter für Position
-void Display::setOwnPosition(float lat, float lon) {
-    ownLat = lat;
-    ownLon = lon;
-}
-
-void Display::getOwnPosition(float &lat, float &lon) const {
-    lat = ownLat;
-    lon = ownLon;
-}
 
 float Display::haversine(float lat1, float lon1, float lat2, float lon2) {
   float R = 6371000; // Erdradius in Metern
@@ -34,7 +21,7 @@ float Display::haversine(float lat1, float lon1, float lat2, float lon2) {
 }
 
 
-void Display::transformAndRotate(float lat, float lon, int &x, int &y, byte currentAzimuth) {
+void Display::transformAndRotate(float lat, float lon, float ownLat, float ownLon, int &x, int &y, byte currentAzimuth) {
     float distance = haversine(ownLat, ownLon, lat, lon);
     float angle = atan2(lat - ownLat, lon - ownLon); // Richtung berechnen
     // Kombiniere die Rotationen
@@ -62,7 +49,7 @@ void Display::transformAndRotate(float lat, float lon, int &x, int &y, byte curr
 
 
 
-void Display::drawMap(float coords[][2], int numCoords, byte azimuth) {
+void Display::drawMap(Player players[], Player ownPlayer, byte otherPlyaerCount, byte azimuth) {
   // Eigene Position zeichnen (Pfeil in der Mitte)
   //SPI.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
   tft.fillScreen(ST7735_BLACK);
@@ -72,19 +59,26 @@ void Display::drawMap(float coords[][2], int numCoords, byte azimuth) {
                    SCREEN_WIDTH / 2 + 5, SCREEN_HEIGHT / 2 + 5,
                    ST7735_RED);
   printf("Own position drawn\n");
-  printf("Own Lat: %f, Own Lon: %f\n", ownLat, ownLon);
+  printf("Own Lat: %f, Own Lon: %f\n", ownPlayer.position.lat, ownPlayer.position.lon);
   // Andere Koordinaten zeichnen
-  for (int i = 0; i < numCoords; i++) {
+  for (byte i = 0; i < otherPlyaerCount; i++) {
     int x, y;
-    transformAndRotate(coords[i][0], coords[i][1], x, y, azimuth);
+    transformAndRotate(players[i].position.lat, players[i].position.lon, ownPlayer.position.lat, ownPlayer.position.lon,  x, y, azimuth);
     tft.fillCircle(x, y, 3, ST7735_GREEN); // Punkte darstellen
   
   }
   printf("Map drawn\n");
   
-  //SPI.endTransaction();
-
 }
+
+void Display::drawStartScreen() {
+  tft.setTextColor(ST77XX_WHITE);
+  tft.setCursor(20, 30);
+  tft.print("A -  HOST GAME");
+  tft.setCursor(20, 90);
+  tft.print("B - JOIN GAME");
+}
+
 
 void Display::displaySetup(){
 

@@ -11,10 +11,10 @@
 // 0: Receive; 1: send
  byte address = 0x01;
 Communication communication;
-float ownLat = 50.098092;
-float ownLon = 8.215985;
 byte currentAzimuth = 0;
-Display display(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCK, TFT_RST, ownLat, ownLon);
+Player players[] = {{1, {50.099248, 8.214117}, false, 0}, {2, {50.095493, 8.262105}, false, 0}, {3, {50.104345,  8.23314}, false, 0}, {4, {50.104192, 8.145831}, true, 0}};
+Player ownPlayer = {1, {50.098092, 8.215985}, false, 0};
+Display display(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCK, TFT_RST);
 
 
 // HardwareSerial für GPS
@@ -41,34 +41,19 @@ void setup() {
 
   // Kompass initialisieren und kalibrieren
   gpsHandler.calibrateCompass();
-
-
-
-  float otherCoords[][2] = 
-  {
-    {50.099248, 8.214117}, 
-    {50.095493, 8.262105}, 
-    {50.104345,  8.23314},
-    {50.104192, 8.145831}
-  };
-  display.drawMap(otherCoords, 4, 0);
   communication.setup();
 }
-void loopDisplay(){
-  float otherCoords[][2] = 
-  {
-    {50.099248, 8.214117}, 
-    {50.095493, 8.262105}, 
-    {50.104345,  8.23314},
-    {50.104192, 8.145831}
-  };
-  compass.read();
-  currentAzimuth = compass.getAzimuth();
-  printf("Azimuth: %d\n", currentAzimuth);
 
-  
-  display.drawMap(otherCoords, 4, currentAzimuth);
+void loopDisplay(){
+  compass.read();
+  // currentAzimuth = compass.getAzimuth();
+  // printf("Azimuth: %d\n", currentAzimuth);
+
+  // display.drawMap(players, ownPlayer, 4, currentAzimuth);
+  display.drawStartScreen();
 }
+
+
 void loopCommunication(){
 
 #if MODE == 0
@@ -86,14 +71,10 @@ void loopCommunication(){
 #endif
 }
 
+void loopGPS(){
+    unsigned long currentMillis = millis();
 
-void loop() {
-  //loopCommunication();
-  loopDisplay();
-  delay(100);
-      unsigned long currentMillis = millis();
-
-  // GPS-Daten alle 10 Sekunden auslesen
+// GPS-Daten alle 10 Sekunden auslesen
     if (currentMillis - previousGPSMillis >= gpsInterval) {
         previousGPSMillis = currentMillis;
 
@@ -128,5 +109,14 @@ void loop() {
         Serial.print("Kompassrichtung (Text): ");
         Serial.println(direction);
     }
+}
+
+
+void loop() {
+  //loopCommunication();
+  loopDisplay();
+  delay(1000);
+
+  
 }
 

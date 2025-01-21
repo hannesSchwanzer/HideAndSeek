@@ -3,6 +3,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_ST7735.h>
 #include <Arduino.h>
+#include "Player.hpp"
 
 // Display-Spezifikationen
 #include "configValues.hpp"
@@ -16,15 +17,16 @@ class Display {
 
     // Private Methoden
     float haversine(float lat1, float lon1, float lat2, float lon2);
-    void transformAndRotate(float lat, float lon, int &x, int &y, byte currentAzimuth);
+    void transformAndRotate(float lat, float lon, float ownLat, float ownLon, int &x, int &y, byte currentAzimuth);
 
   public:
     // Konstruktor
-    Display(uint8_t cs, uint8_t dc, uint8_t mosi, uint8_t sck, uint8_t rst, float lat, float lon);
+    Display(uint8_t cs, uint8_t dc, uint8_t mosi, uint8_t sck, uint8_t rst);
 
     // Öffentliche Methoden
     void displaySetup();
-    void drawMap(float coords[][2], int numCoords, byte azimuth);
-    void setOwnPosition(float lat, float lon);
-    void getOwnPosition(float &lat, float &lon) const;
+    void drawMap(Player players[], Player ownPlayer, byte otherPlayerCount, byte azimuth);
+    void drawStartScreen();
+    void drawWaitingScreen(bool host);
+
 };
