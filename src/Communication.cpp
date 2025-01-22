@@ -165,7 +165,7 @@ void Communication::onReceive(int packetSize) {
 }
 
 bool Communication::isMessageValid(LoRaMessage& message) {
-  return true; // TODO:
+  return true; // TODO:Check for specif message sizes
 }
 
 void Communication::printMessage(LoRaMessage message) {
@@ -182,6 +182,21 @@ void Communication::printMessage(LoRaMessage message) {
     Serial.print((byte)message.payload[i]);
   }
 }
+
+
+void Communication::parseJoiningRequestAcceptance(uint8_t* macAddress, HaS_Address* assignedAddress) {
+    for (int i = 0; i < MAC_ADDRESS_SIZE; i++) {
+        macAddress[i] = (uint8_t)LoRa.read();
+    }
+    *assignedAddress = (uint8_t)LoRa.read();
+}
+
+void Communication::parseJoiningRequest(uint8_t* macAddress) {
+    for (int i = 0; i < MAC_ADDRESS_SIZE; i++) {
+        macAddress[i] = (uint8_t)LoRa.read();
+    }
+}
+
 
 // Check if there are messages in the queue
 bool Communication::hasMessage() {

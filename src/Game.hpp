@@ -38,4 +38,6 @@ private:
     void loopHost();
     void loopRunning();
     bool buttonPressed(int pin);
+    HaS_Address createNewAdress();
+    void removePlayer(int idx);
 };
