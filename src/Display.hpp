@@ -21,12 +21,13 @@ class Display {
 
   public:
     // Konstruktor
-    Display(uint8_t cs, uint8_t dc, uint8_t mosi, uint8_t sck, uint8_t rst);
+    Display();
 
     // Öffentliche Methoden
     void displaySetup();
     void drawMap(Player players[], Player ownPlayer, byte otherPlayerCount, byte azimuth);
     void drawStartScreen();
-    void drawWaitingScreen(bool host);
+    void drawWaitingScreen(bool isHost, byte playerCount);
+    void resetDisplay();
 
 };

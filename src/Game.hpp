@@ -5,7 +5,7 @@
 #include "configValues.hpp"
 #include "Player.hpp"
 #include "Globals.hpp"
-
+#include "Pins.hpp"
 
 enum gameState{
   INIT,
@@ -38,4 +38,7 @@ private:
     void loopHost();
     void loopRunning();
     bool buttonPressed(int pin);
+    bool checkButtonTimer();
+    void testButtons();
+ 
 };

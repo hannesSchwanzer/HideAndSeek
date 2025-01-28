@@ -5,9 +5,8 @@
 #include "Pins.hpp"
 #include "Display.hpp"
 
-Display::Display(uint8_t cs, uint8_t dc, uint8_t sda, uint8_t sck,  uint8_t rst) 
-  : tft(cs, dc, sda, sck, rst){}
-
+Display::Display() 
+  : tft(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCK, TFT_RST){}
 
 float Display::haversine(float lat1, float lon1, float lat2, float lon2) {
   float R = 6371000; // Erdradius in Metern
@@ -79,9 +78,28 @@ void Display::drawStartScreen() {
   tft.print("B - JOIN GAME");
 }
 
+void Display::drawWaitingScreen(bool isHost, byte playerCount) {
+  tft.setTextColor(ST77XX_WHITE);
+  tft.setCursor(20, 30);
+  if (isHost) {
+    tft.print("You are the Host");
+  }
+  tft.setCursor(20, 50);
+  tft.print("Curren Players:");
+  tft.setCursor(20, 70);
+  tft.print(playerCount+1, 20);
+if (isHost) {
+    tft.setCursor(20, 110);
+    tft.print("A - Start Game");
+  }
+}
+
+void Display::resetDisplay(){
+  tft.fillScreen(ST7735_BLACK);
+}
+
 
 void Display::displaySetup(){
-
     tft.initR(INITR_BLACKTAB);
     tft.fillScreen(ST7735_BLACK);
 

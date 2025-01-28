@@ -15,4 +15,7 @@
 #define CANCEL_SEARCH_AFTER (10 * 1000)
 #define CANCEL_WAITING_FOR_START_AFTER (3 * 60 * 000)
 
+//Button
+#define BUTTON_COOLDOWN 1000 //5sec nur zum testen sonnst 1000
+
 
