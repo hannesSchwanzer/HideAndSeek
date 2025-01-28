@@ -11,9 +11,6 @@ void setup() {
 
 }
 
-bool buttonPressed(int pin) { return digitalRead(pin) == LOW; }
-
-
 void loop() {
     game.loopGame();
 }
