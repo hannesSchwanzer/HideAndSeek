@@ -7,4 +7,5 @@ struct Player
     Position position;
     bool is_hunter;
     unsigned long lastMessageReceivedAt;
+    bool hasAccepted;
 };

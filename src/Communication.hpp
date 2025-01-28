@@ -8,7 +8,6 @@
 #include "Globals.hpp"
 
 enum class LoRaMessageType : uint8_t {
-    PAIRING_REQUEST = 1,
     GPS_DATA,
     GAME_START,
     PLAYER_ADRESSES,
@@ -30,12 +29,16 @@ public:
     Communication();
     bool setup();
     void setLocalAddress(HaS_Address localAddress);
+
     void sendJoiningRequest();
     void sendJoiningRequestAcceptance(uint8_t* macAddress, HaS_Address assignedAddress);
     void sendAcceptanceAcknoledgment(HaS_Address receiverAddress);
     void sendGPSData(int longitude, int latidute);
     void sendMessage(LoRaMessage& message);
+    void sendGameStart();
+
     void parseJoiningRequestAcceptance(uint8_t* macAddress, HaS_Address* assignedAddress);
+    void parseJoiningRequest(uint8_t* macAddress);
 
     void printMessage(LoRaMessage message);
     static void setInstance(Communication* instance) {
