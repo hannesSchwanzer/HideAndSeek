@@ -5,10 +5,16 @@ PLATFORMIO_CLI = platformio
 all: build
 
 build:
-	$(PLATFORMIO_CLI) run
+	$(PLATFORMIO_CLI) run -e debug
+
+buildRelease:
+	$(PLATFORMIO_CLI) run -e release
 
 upload:
-	$(PLATFORMIO_CLI) run --target upload
+	$(PLATFORMIO_CLI) run -e debug --target upload
+
+uploadRelease:
+	$(PLATFORMIO_CLI) run -e release --target upload
 
 monitor:
 	$(PLATFORMIO_CLI) device monitor

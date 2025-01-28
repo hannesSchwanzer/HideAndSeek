@@ -25,7 +25,7 @@ void Display::transformAndRotate(float lat, float lon, float ownLat, float ownLo
     float angle = atan2(lat - ownLat, lon - ownLon); // Richtung berechnen
     // Kombiniere die Rotationen
     float azimuthRad = radians(currentAzimuth);
-    printf("Azimuth - rad: %d\n", currentAzimuth);
+    DEBUG_PRINTF("Azimuth - rad: %d\n", currentAzimuth);
     float totalAngle = angle + azimuthRad;
     if (distance > MAX_DISTANCE) distance = MAX_DISTANCE;
 
@@ -43,7 +43,7 @@ void Display::transformAndRotate(float lat, float lon, float ownLat, float ownLo
     // Begrenze die Pixelkoordinaten, falls sie außerhalb des sichtbaren Bereichs liegen
     x = max(0, min(SCREEN_WIDTH - 1, x));
     y = max(0, min(SCREEN_HEIGHT - 1, y));
-    //printf("x: %d, y: %d\n", x, y);
+    //DEBUG_PRINTF("x: %d, y: %d\n", x, y);
 }
 
 
@@ -57,8 +57,8 @@ void Display::drawMap(Player players[], Player ownPlayer, byte otherPlyaerCount,
                    SCREEN_WIDTH / 2 - 5, SCREEN_HEIGHT / 2 + 5,
                    SCREEN_WIDTH / 2 + 5, SCREEN_HEIGHT / 2 + 5,
                    ST7735_RED);
-  printf("Own position drawn\n");
-  printf("Own Lat: %f, Own Lon: %f\n", ownPlayer.position.lat, ownPlayer.position.lon);
+  DEBUG_PRINTF("Own position drawn\n");
+  DEBUG_PRINTF("Own Lat: %f, Own Lon: %f\n", ownPlayer.position.lat, ownPlayer.position.lon);
   // Andere Koordinaten zeichnen
   for (byte i = 0; i < otherPlyaerCount; i++) {
     int x, y;
@@ -66,7 +66,7 @@ void Display::drawMap(Player players[], Player ownPlayer, byte otherPlyaerCount,
     tft.fillCircle(x, y, 3, ST7735_GREEN); // Punkte darstellen
   
   }
-  printf("Map drawn\n");
+  DEBUG_PRINTF("Map drawn\n");
   
 }
 

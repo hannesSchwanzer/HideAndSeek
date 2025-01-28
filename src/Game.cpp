@@ -232,19 +232,19 @@ void Game::loopRunning() {
 void Game::loopGame() {
   switch (state) { 
     case INIT:
-      Serial.println("State: INTI");
+      DEBUG_PRINTLN("State: INTI");
       loopInit();
       break;
     case HOST:
-      Serial.println("State: HOST");
+      DEBUG_PRINTLN("State: HOST");
       loopHost();
       break;
     case SEARCH:
-      Serial.println("State: SEARCH");
+      DEBUG_PRINTLN("State: SEARCH");
       loopSearch();
       break;
     case RUNNING:
-      Serial.println("State: RUNNING");
+      DEBUG_PRINTLN("State: RUNNING");
       loopRunning();
       break;
     default:
@@ -255,10 +255,10 @@ void Game::loopGame() {
 
 void Game::testButtons(){
   if (buttonPressed(BUTTON_PIN_1)) {
-    Serial.println("Button 1 pressed");
+    DEBUG_PRINTLN("Button 1 pressed");
   }
   if (buttonPressed(BUTTON_PIN_2)) {
-    Serial.println("Button 2 pressed");
+    DEBUG_PRINTLN("Button 2 pressed");
   }
   delay(500);
 }
@@ -275,7 +275,7 @@ if ((currentTime - lastTimeButtonPressed) >= BUTTON_COOLDOWN) {
     lastTimeButtonPressed = currentTime;
     return true;
 }else{
-  Serial.println("Button Blocked");
+  DEBUG_PRINTLN("Button Blocked");
 
   return false;
 }
@@ -294,3 +294,9 @@ void Game::removePlayer(int idx) {
   // Decrease the size
   otherPlayerCount--;
 }
+
+
+HaS_Address Game::createNewAdress() {
+  return 0; // TODO: Implement
+}
+

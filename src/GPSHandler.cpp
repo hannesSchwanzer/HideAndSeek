@@ -3,6 +3,7 @@
 
 #include <TinyGPS++.h>
 #include <QMC5883LCompass.h>
+#include "Globals.hpp"
 
 
 class GPSHandler {
@@ -25,7 +26,7 @@ public:
         // Kompass initialisieren
         compass.init();
         compass.calibrate();
-        Serial.println("Kompass initialisiert.");
+        DEBUG_PRINTLN("Kompass initialisiert.");
         
  
     }
@@ -72,7 +73,7 @@ public:
     void calibrateCompass() {
         // Füge hier die Kalibrierungsdaten ein
         compass.setCalibration(-1537, 1266, -1961, 958, -1342, 1492); 
-        Serial.println("Kompass kalibriert.");
+        DEBUG_PRINTLN("Kompass kalibriert.");
     }
 
     // Methode zur Berechnung der Kompassrichtung

@@ -1,13 +1,12 @@
 #include "Communication.hpp"
-#include <cstring>
-#include <functional>
 #include "Globals.hpp"
+#include "Pins.hpp"
 #include "configValues.hpp"
 #include "esp_err.h"
-#include "esp_wifi_types.h"
 #include "esp_wifi.h"
-#include "Pins.hpp"
-
+#include "esp_wifi_types.h"
+#include <cstring>
+#include <functional>
 
 Communication *Communication::_instance;
 QueueHandle_t Communication::messageQueue;
@@ -23,21 +22,17 @@ bool Communication::setup() {
   LoRa.setPins(LORA_SS, LORA_RST, LORA_DI0);
 
   if (!LoRa.begin(LORA_BAND)) {
-#ifdef debug
-    Serial.println("Starting LoRa failed!");
-#endif
+    DEBUG_PRINTLN("Starting LoRa failed!");
+
     return false;
   }
-#ifdef debug
-  Serial.println("Started LoRa successfully!");
-#endif
+  DEBUG_PRINTLN("Started LoRa successfully!");
 
   // Initialize the message queue
   messageQueue = xQueueCreate(QUEUE_SIZE, sizeof(LoRaMessage));
   if (messageQueue == nullptr) {
-#ifdef debug
-      Serial.println("Failed to create message queue!");
-#endif
+    DEBUG_PRINTLN("Failed to create message queue!");
+
     return false;
   }
 
@@ -45,9 +40,7 @@ bool Communication::setup() {
   LoRa.onReceive(onReceiveBridge);
   LoRa.receive();
 
-#ifdef debug
-  Serial.println("LoRa is in receive mode.");
-#endif
+  DEBUG_PRINTLN("LoRa is in receive mode.");
   return true;
 }
 
@@ -71,14 +64,15 @@ void Communication::sendJoiningRequest() {
   sendMessage(message);
 }
 
-
-void Communication::sendJoiningRequestAcceptance(uint8_t* macAddress, HaS_Address assignedAddress) {
+void Communication::sendJoiningRequestAcceptance(uint8_t *macAddress,
+                                                 HaS_Address assignedAddress) {
   LoRaMessage message;
   message.messageType = LoRaMessageType::JOINING_REQUEST_ACCPEPTANCE;
   message.senderAddress = _localAddress;
   message.payloadLength = MAC_ADDRESS_SIZE + sizeof(HaS_Address);
   std::memcpy(message.payload, macAddress, MAC_ADDRESS_SIZE);
-  std::memcpy(message.payload + MAC_ADDRESS_SIZE, &assignedAddress, sizeof(HaS_Address));
+  std::memcpy(message.payload + MAC_ADDRESS_SIZE, &assignedAddress,
+              sizeof(HaS_Address));
 
   sendMessage(message);
 }
@@ -93,7 +87,6 @@ void Communication::sendAcceptanceAcknoledgment(HaS_Address receiverAddress) {
   sendMessage(message);
 }
 
-
 void Communication::sendGPSData(int longitude, int latidute) {
   LoRaMessage message;
   message.messageType = LoRaMessageType::GPS_DATA;
@@ -102,108 +95,102 @@ void Communication::sendGPSData(int longitude, int latidute) {
 
   std::memcpy(message.payload, &longitude, sizeof(longitude));
   std::memcpy(message.payload + sizeof(longitude), &latidute, sizeof(latidute));
-  
+
   sendMessage(message);
 }
 
-void Communication::sendMessage(LoRaMessage& message) {
-#ifdef debug
-  Serial.println("Sending Message");
-#endif
+void Communication::sendMessage(LoRaMessage &message) {
+  DEBUG_PRINTLN("Sending Message");
 
   LoRa.beginPacket();
   LoRa.write(message.senderAddress);                     // Send as binary
   LoRa.write(static_cast<uint8_t>(message.messageType)); // Send as binary
-  LoRa.write(message.payloadLength);                    // Send as binary
-  LoRa.write((uint8_t*)message.payload, message.payloadLength); // Send the payload
+  LoRa.write(message.payloadLength);                     // Send as binary
+  LoRa.write((uint8_t *)message.payload,
+             message.payloadLength); // Send the payload
   LoRa.endPacket();
 
   // Switch back to receive mode
   LoRa.receive();
 }
 
-bool Communication::processMessage(int packetSize, LoRaMessage& message) {
-    if (packetSize < HEADER_SIZE) {
-        return false; // Not enough data for a header
-    }
+bool Communication::processMessage(int packetSize, LoRaMessage &message) {
+  if (packetSize < HEADER_SIZE) {
+    return false; // Not enough data for a header
+  }
 
-    message.senderAddress = (uint8_t)LoRa.read(); // Read as binary
-    message.messageType = static_cast<LoRaMessageType>((uint8_t)LoRa.read());
-    message.payloadLength = (uint8_t)LoRa.read();
+  message.senderAddress = (uint8_t)LoRa.read(); // Read as binary
+  message.messageType = static_cast<LoRaMessageType>((uint8_t)LoRa.read());
+  message.payloadLength = (uint8_t)LoRa.read();
 
-    if (packetSize - HEADER_SIZE != message.payloadLength || message.payloadLength > PAYLOAD_SIZE) {
-        return false; // Payload length mismatch or exceeds buffer size
-    }
+  if (packetSize - HEADER_SIZE != message.payloadLength ||
+      message.payloadLength > PAYLOAD_SIZE) {
+    return false; // Payload length mismatch or exceeds buffer size
+  }
 
-    for (int i = 0; i < message.payloadLength; i++) {
-        message.payload[i] = (uint8_t)LoRa.read(); // Read as binary
-    }
+  for (int i = 0; i < message.payloadLength; i++) {
+    message.payload[i] = (uint8_t)LoRa.read(); // Read as binary
+  }
 
-    return true;
+  return true;
 }
 
 void Communication::onReceive(int packetSize) {
-#ifdef DEBUG
-  Serial.println("Received packet '");
-#endif
+  DEBUG_PRINTLN("Received packet '");
 
   LoRaMessage message;
-  bool processing_valid = processMessage(packetSize, message); // TODO: Handle Exceptions
+  bool processing_valid =
+      processMessage(packetSize, message); // TODO: Handle Exceptions
   if (!processing_valid || !isMessageValid(message)) {
-#ifdef DEBUG
-  Serial.println("Message invalid");
-#endif
+    DEBUG_PRINTLN("Message invalid");
     return;
   }
 
   // Add message to the queue
   if (xQueueSend(messageQueue, &message, 0) != pdTRUE) {
-#ifdef DEBUG
-      Serial.println("Queue full! Dropping message."); //TODO: 
-#endif
+    DEBUG_PRINTLN("Queue full! Dropping message."); // TODO:
   }
 }
 
-bool Communication::isMessageValid(LoRaMessage& message) {
+bool Communication::isMessageValid(LoRaMessage &message) {
   return true; // TODO:Check for specif message sizes
 }
 
 void Communication::printMessage(LoRaMessage message) {
-  Serial.println("Header:");
-  Serial.print("\tSender Address: ");
-  Serial.println(message.senderAddress);
-  Serial.print("\tMessage Type: ");
-  Serial.println(static_cast<uint8_t>(message.messageType));
-  Serial.print("\tPayload Length: ");
-  Serial.println(message.payloadLength);
+  DEBUG_PRINTLN("Header:");
+  DEBUG_PRINT("\tSender Address: ");
+  DEBUG_PRINTLN(message.senderAddress);
+  DEBUG_PRINT("\tMessage Type: ");
+  DEBUG_PRINTLN(static_cast<uint8_t>(message.messageType));
+  DEBUG_PRINT("\tPayload Length: ");
+  DEBUG_PRINTLN(message.payloadLength);
 
-  Serial.println("payload");
+  DEBUG_PRINTLN("payload");
   for (int i = 0; i < message.payloadLength; i++) {
-    Serial.print((byte)message.payload[i]);
+    DEBUG_PRINT((byte)message.payload[i]);
   }
 }
 
-
-void Communication::parseJoiningRequestAcceptance(uint8_t* macAddress, HaS_Address* assignedAddress) {
-    for (int i = 0; i < MAC_ADDRESS_SIZE; i++) {
-        macAddress[i] = (uint8_t)LoRa.read();
-    }
-    *assignedAddress = (uint8_t)LoRa.read();
+void Communication::parseJoiningRequestAcceptance(
+    uint8_t *macAddress, HaS_Address *assignedAddress) {
+  for (int i = 0; i < MAC_ADDRESS_SIZE; i++) {
+    macAddress[i] = (uint8_t)LoRa.read();
+  }
+  *assignedAddress = (uint8_t)LoRa.read();
 }
 
-void Communication::parseJoiningRequest(uint8_t* macAddress) {
-    for (int i = 0; i < MAC_ADDRESS_SIZE; i++) {
-        macAddress[i] = (uint8_t)LoRa.read();
-    }
+void Communication::parseJoiningRequest(uint8_t *macAddress) {
+  for (int i = 0; i < MAC_ADDRESS_SIZE; i++) {
+    macAddress[i] = (uint8_t)LoRa.read();
+  }
 }
-
 
 // Check if there are messages in the queue
 bool Communication::hasMessage() {
-    return uxQueueMessagesWaiting(messageQueue) > 0;
+  return uxQueueMessagesWaiting(messageQueue) > 0;
 }
 
 // Retrieve the next message from the queue
-bool Communication::getNextMessage(LoRaMessage& message) {
-    return xQueueReceive(messageQueue, &message, 0) == pdTRUE;
+bool Communication::getNextMessage(LoRaMessage &message) {
+  return xQueueReceive(messageQueue, &message, 0) == pdTRUE;
 }

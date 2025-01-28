@@ -2,12 +2,13 @@
 #include "Pins.hpp"
 #include <Wire.h>
 #include <SPI.h>
+
 Game game;
 
 void setup() {
     Serial.begin(115200);             // Serielle Kommunikation starten
     game.initGame();
-    Serial.println("start");
+    DEBUG_PRINTLN("start");
 
 }
 
