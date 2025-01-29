@@ -6,12 +6,15 @@
 #include "Player.hpp"
 #include "Globals.hpp"
 #include "Pins.hpp"
+#include "GPSHandler.cpp"
 
 enum gameState{
   INIT,
   HOST,
   SEARCH,
-  RUNNING
+  RUNNING,
+  DEAD,
+  WON
 };
 
 class Game{
@@ -23,6 +26,7 @@ private:
     gameState state;
     Communication communication;
     Display display;
+    GPSHandler gpsHandler;
     Player otherPlayers[MAX_PLAYERS-1];
     Player ownPlayer;
     byte otherPlayerCount;
@@ -30,6 +34,7 @@ private:
     unsigned long lastMessageSendAt;
     bool foundGame = false;
     bool receivedRequestAcceptance = false;
+    unsigned long startTime;
     
 
     void setState(gameState state);
@@ -42,5 +47,6 @@ private:
     void removePlayer(int idx);
     bool checkButtonTimer();
     void testButtons();
+    int getPlayerIdxFromAddress(HaS_Address address);
  
 };

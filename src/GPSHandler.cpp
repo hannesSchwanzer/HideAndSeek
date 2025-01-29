@@ -9,19 +9,24 @@
 class GPSHandler {
 private:
     TinyGPSPlus gps;                     // GPS-Bibliothek
-    HardwareSerial* gpsSerial;           // Serieller Port für GPS
+    HardwareSerial gpsSerial;           // Serieller Port für GPS
     QMC5883LCompass compass;         // Kompass
     int currentAzimuth = 0;     // Azimut als float
 
 
 public:
     // Konstruktor
-    GPSHandler(HardwareSerial* serial)
-        : gpsSerial(serial) {}
+    // GPSHandler(HardwareSerial* serial)
+    //     : gpsSerial(serial) {}
 
     // Initialisierungsmethode
-    void begin() {
-        gpsSerial->begin(9600);          // GPS-Modul initialisieren
+    void setup() {
+
+        // TODO:
+        // - Automatisch initialisieren
+        // - Nachschauen wie die pins gesetzt werden
+        gpsSerial = HardwareSerial(1); // RX=17, TX=23
+        gpsSerial.begin(9600);          // GPS-Modul initialisieren
 
         // Kompass initialisieren
         compass.init();
@@ -32,12 +37,12 @@ public:
     }
 
     // Methode zum Lesen der GPS-Daten
-    bool readLocation(double& latitude, double& longitude) {
-        while (gpsSerial->available() > 0) {
-            if (gps.encode(gpsSerial->read())) {
+    bool readLocation(Position& postion) {
+        while (gpsSerial.available() > 0) {
+            if (gps.encode(gpsSerial.read())) {
                 if (gps.location.isValid()) {
-                    latitude = gps.location.lat();
-                    longitude = gps.location.lng();
+                    postion.lat = gps.location.lat();
+                    postion.lon = gps.location.lng();
                     return true;
                 }
             }
@@ -47,8 +52,8 @@ public:
 
     // Latitude ausgeben
     double getLatitude() {
-        while (gpsSerial->available() > 0) {
-            if (gps.encode(gpsSerial->read())) {
+        while (gpsSerial.available() > 0) {
+            if (gps.encode(gpsSerial.read())) {
                 if (gps.location.isValid()) {
                     return gps.location.lat();
                 }
@@ -59,8 +64,8 @@ public:
 
     // Longitude ausgeben
     double getLongitude() {
-        while (gpsSerial->available() > 0) {
-            if (gps.encode(gpsSerial->read())) {
+        while (gpsSerial.available() > 0) {
+            if (gps.encode(gpsSerial.read())) {
                 if (gps.location.isValid()) {
                     return gps.location.lng();
                 }

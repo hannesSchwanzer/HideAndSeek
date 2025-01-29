@@ -14,6 +14,7 @@ enum class LoRaMessageType : uint8_t {
     JOINING_REQUEST,
     JOINING_REQUEST_ACCPEPTANCE,
     ACCEPTANCE_ACKNOLEDGMENT,
+    PLAYER_DEAD, // TODO: implement
     OTHER,
 };
 

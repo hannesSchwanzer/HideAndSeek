@@ -16,11 +16,12 @@ unsigned long lastTimeButtonPressed = 0;
 void Game::initGame() {
   display.displaySetup();
   communication.setup();
+  gpsHandler.setup();
   pinMode(BUTTON_PIN_1, INPUT_PULLUP); // Mit Pull-Up-Widerstand
   pinMode(BUTTON_PIN_2, INPUT_PULLUP); // Mit Pull-Up-Widerstand
   randomSeed(millis());
   ownPlayer.player_address = random(256);
-  state = INIT;
+  setState(INIT);
 }
 
 void Game::setState(gameState state) {
@@ -42,6 +43,15 @@ void Game::setState(gameState state) {
     break;
   }
   case RUNNING: {
+    startTime = millis();
+    break;
+  }
+  case WON: {
+  // TODO:
+    break;
+  }
+  case DEAD: {
+  // TODO:
     break;
   }
   }
@@ -50,13 +60,12 @@ void Game::setState(gameState state) {
 void Game::loopInit() {
   display.drawStartScreen();
   if (buttonPressed(BUTTON_PIN_1)) {
-    state = HOST;
+    setState(HOST);
     display.resetDisplay();
-  } 
-  // if (buttonPressed(BUTTON_PIN_2)) {
-  //   state = SEARCH;
-  //   display.resetDisplay();
-  // }
+  } else if (buttonPressed(BUTTON_PIN_2)) {
+    setState(SEARCH);
+    display.resetDisplay();
+  }
   delay(500);
 }
 
@@ -125,14 +134,8 @@ void Game::loopSearch() {
 void Game::loopHost() {
   display.drawWaitingScreen(true, otherPlayerCount);
 
-  if (buttonPressed(BUTTON_PIN_1)) {
-    state = RUNNING;
-    display.resetDisplay();
-  }
-  delay(500);
-
   unsigned long now = millis();
-  //
+
   // Handle incoming messages
   while (communication.hasMessage()) {
     LoRaMessage message;
@@ -152,6 +155,7 @@ void Game::loopHost() {
                                           .is_hunter = false,
                                           .lastMessageReceivedAt = now,
                                           .hasAccepted = false};
+        otherPlayerCount++;
 
         // Extract max address
         uint8_t macAddress[MAC_ADDRESS_SIZE];
@@ -164,13 +168,8 @@ void Game::loopHost() {
       }
       case LoRaMessageType::ACCEPTANCE_ACKNOLEDGMENT: {
         // Check which player send the message
-        int playerIdx = -1;
-        for (int i = 0; i < otherPlayerCount; i++) {
-          if (otherPlayers[0].player_address == message.senderAddress) {
-            playerIdx = i;
-            break;
-          }
-        }
+        int playerIdx = getPlayerIdxFromAddress(message.senderAddress);
+
 
         // Ingore message if no player was found
         if (playerIdx == -1)
@@ -188,8 +187,12 @@ void Game::loopHost() {
     }
   }
 
+  if (buttonPressed(BUTTON_PIN_1)) {
+    state = RUNNING;
+    display.resetDisplay();
+  }
+  delay(500);
   // TODO:
-  // detect button press and start game
   //  Send own position
   //  random select catcher
 
@@ -208,52 +211,104 @@ void Game::loopHost() {
 }
 
 void Game::loopRunning() {
-  // TODO:
-  // Handle incoming messages
+  unsigned long now = millis();
+
   while (communication.hasMessage()) {
     LoRaMessage message;
     if (communication.getNextMessage(message)) {
       switch (message.messageType) {
+      case LoRaMessageType::GPS_DATA: {
+        Position pos; // TODO: Extract from message
+        int playeridx = getPlayerIdxFromAddress(message.senderAddress);
+        if (playeridx == -1) break;
+        otherPlayers[playeridx].position = pos;
+
+        break;
+      }
+      case LoRaMessageType::PLAYER_DEAD: {
+        int playeridx = getPlayerIdxFromAddress(message.senderAddress);
+        if (playeridx == -1) break;
+        removePlayer(playeridx);
+        if (otherPlayerCount == 0) {
+          // TODO: Searcher hat gewonnen. Implement
+          }
+        break;
+      }
       default:
         break;
       }
     }
   }
 
-  // TODO:
-  // detect button press and react to it
+  // Send position every n minutes
+  if (now - lastMessageSendAt >= SEND_POS_INTERVAL) {
+    // TODO: send position
+  }
 
-  // TODO:
+  // LostGame
+  if (!ownPlayer.is_hunter && (buttonPressed(BUTTON_PIN_1) || buttonPressed(BUTTON_PIN_2))) {
+    setState(DEAD);
+    // TODO: Send message, that you lost
+  }
+
   // Sanity check
-  //  Mark players as dead from otherPlayers if they didn't answer after a fixed
-  //  amount of time
+  // Lose / Win game after certain amount of time
+  if (now - startTime >= GAME_DURATION) {
+    if (ownPlayer.is_hunter) {
+      setState(DEAD);
+    } else {
+      setState(WON);
+    }
+  }
+
+  // Remove player if not answering
+  int i = 0;
+  while (i < otherPlayerCount) {
+    if (now - otherPlayers[i].lastMessageReceivedAt >= REMOVE_PLAYER_NOT_ANSWERING_AFTER) {
+      removePlayer(i);
+    } else {
+      i++;
+    }
+  }
+
+  // Update pos and azimuth
+  bool succesfull = gpsHandler.readLocation(ownPlayer.position);
+  if (!succesfull) {
+    // TODO: 
+    DEBUG_PRINTF("Couldn't read location");
+  }
+  // TODO: Read compass
+
+  // Update Display
+  display.drawMap(otherPlayers, ownPlayer, otherPlayerCount, 90); //TODO: Remove placeholder 90
+
+  delay(1000);
 }
 
 void Game::loopGame() {
-  switch (state) { 
-    case INIT:
-      DEBUG_PRINTLN("State: INTI");
-      loopInit();
-      break;
-    case HOST:
-      DEBUG_PRINTLN("State: HOST");
-      loopHost();
-      break;
-    case SEARCH:
-      DEBUG_PRINTLN("State: SEARCH");
-      loopSearch();
-      break;
-    case RUNNING:
-      DEBUG_PRINTLN("State: RUNNING");
-      loopRunning();
-      break;
-    default:
-      break;
-    }
+  switch (state) {
+  case INIT:
+    DEBUG_PRINTLN("State: INIT");
+    loopInit();
+    break;
+  case HOST:
+    DEBUG_PRINTLN("State: HOST");
+    loopHost();
+    break;
+  case SEARCH:
+    DEBUG_PRINTLN("State: SEARCH");
+    loopSearch();
+    break;
+  case RUNNING:
+    DEBUG_PRINTLN("State: RUNNING");
+    loopRunning();
+    break;
+  default:
+    break;
+  }
 }
 
-
-void Game::testButtons(){
+void Game::testButtons() {
   if (buttonPressed(BUTTON_PIN_1)) {
     DEBUG_PRINTLN("Button 1 pressed");
   }
@@ -262,24 +317,26 @@ void Game::testButtons(){
   }
   delay(500);
 }
-bool Game::buttonPressed(int pin) {   
-  if (digitalRead(pin) != LOW){
+
+bool Game::buttonPressed(int pin) {
+  if (digitalRead(pin) != LOW) {
     return checkButtonTimer();
   }
   return false;
 }
 
-bool Game::checkButtonTimer(){
-unsigned long currentTime = millis();
-if ((currentTime - lastTimeButtonPressed) >= BUTTON_COOLDOWN) {
+bool Game::checkButtonTimer() {
+  unsigned long currentTime = millis();
+  if ((currentTime - lastTimeButtonPressed) >= BUTTON_COOLDOWN) {
     lastTimeButtonPressed = currentTime;
     return true;
-}else{
-  DEBUG_PRINTLN("Button Blocked");
+  } else {
+    DEBUG_PRINTLN("Button Blocked");
 
-  return false;
-}
+    return false;
+  }
 };
+
 void Game::removePlayer(int idx) {
   // Check if index is valid
   if (idx < 0 || idx >= otherPlayerCount) {
@@ -295,8 +352,20 @@ void Game::removePlayer(int idx) {
   otherPlayerCount--;
 }
 
-
 HaS_Address Game::createNewAdress() {
   return 0; // TODO: Implement
+}
+
+
+int Game::getPlayerIdxFromAddress(HaS_Address address) {
+  int playerIdx = -1;
+  for (int i = 0; i < otherPlayerCount; i++) {
+    if (otherPlayers[i].player_address == address) {
+      playerIdx = i;
+      break;
+    }
+  }
+
+  return playerIdx;
 }
 

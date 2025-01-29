@@ -85,7 +85,7 @@ void Display::drawWaitingScreen(bool isHost, byte playerCount) {
     tft.print("You are the Host");
   }
   tft.setCursor(20, 50);
-  tft.print("Curren Players:");
+  tft.print("Current Players:");
   tft.setCursor(20, 70);
   tft.print(playerCount+1, 20);
 if (isHost) {
