@@ -48,5 +48,6 @@ private:
     bool checkButtonTimer();
     void testButtons();
     int getPlayerIdxFromAddress(HaS_Address address);
+    void waitForRestet();
  
 };

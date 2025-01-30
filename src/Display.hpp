@@ -29,5 +29,7 @@ class Display {
     void drawStartScreen();
     void drawWaitingScreen(bool isHost, byte playerCount);
     void resetDisplay();
+    void drawLoosingScreen();
+    void drawWinningScreen();
 
 };

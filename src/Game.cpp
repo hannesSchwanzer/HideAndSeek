@@ -26,39 +26,47 @@ void Game::initGame() {
 
 void Game::setState(gameState state) {
   this->state = state;
-
+  display.resetDisplay();
   switch (state) {
   case INIT: {
-    // TODO: reset all variables
+    display.drawStartScreen();
     break;
   }
+  
   case HOST: {
     otherPlayerCount = 0;
+
     // startPosition = ; // TODO: replace with call to gps
     break;
   }
+  
   case SEARCH: {
     communication.sendJoiningRequest();
     lastMessageSendAt = millis();
     break;
   }
+  
   case RUNNING: {
     startTime = millis();
     break;
   }
+
   case WON: {
-  // TODO:
+
+    display.resetDisplay();
+    display.drawWinningScreen();
     break;
   }
   case DEAD: {
-  // TODO:
+    
+    display.resetDisplay();
+    display.drawLoosingScreen();
     break;
   }
   }
 }
 
 void Game::loopInit() {
-  display.drawStartScreen();
   if (buttonPressed(BUTTON_PIN_1)) {
     setState(HOST);
     display.resetDisplay();
@@ -70,9 +78,8 @@ void Game::loopInit() {
 }
 
 void Game::loopSearch() {
-  // Handle incoming messages
   display.drawWaitingScreen(false, otherPlayerCount);
-
+  // Handle incoming messages
   while (communication.hasMessage()) {
     LoRaMessage message;
     if (communication.getNextMessage(message)) {
@@ -128,6 +135,7 @@ void Game::loopSearch() {
   } else if (!foundGame && millis() - lastMessageSendAt > CANCEL_SEARCH_AFTER) {
     setState(INIT);
   }
+
   delay(1000);
 }
 
@@ -303,6 +311,14 @@ void Game::loopGame() {
     DEBUG_PRINTLN("State: RUNNING");
     loopRunning();
     break;
+  case DEAD:
+    DEBUG_PRINTLN("State: DEAD");
+    waitForRestet();
+    break;
+  case WON:
+    DEBUG_PRINTLN("State: WON");
+    waitForRestet();
+    break;
   default:
     break;
   }
@@ -356,6 +372,14 @@ HaS_Address Game::createNewAdress() {
   return 0; // TODO: Implement
 }
 
+void Game::waitForRestet() {
+    
+  if (buttonPressed(BUTTON_PIN_1) || buttonPressed(BUTTON_PIN_2)) {
+    setState(INIT);
+  }
+  delay(1000);
+
+}
 
 int Game::getPlayerIdxFromAddress(HaS_Address address) {
   int playerIdx = -1;

@@ -94,10 +94,25 @@ if (isHost) {
   }
 }
 
+void Display::drawLoosingScreen() {
+  tft.setTextColor(ST77XX_WHITE);
+  tft.setCursor(20, 30);
+  tft.print("Du hast Verloren!");
+  tft.setCursor(20, 90);
+  tft.print("Press a Button to restart");
+}
+
+void Display::drawWinningScreen() {  
+  tft.setTextColor(ST77XX_WHITE);
+  tft.setCursor(20, 30);
+  tft.print("Du hast Gewonnen!");
+  tft.setCursor(20, 90);
+  tft.print("Press a Button to restart");
+}
+
 void Display::resetDisplay(){
   tft.fillScreen(ST7735_BLACK);
 }
-
 
 void Display::displaySetup(){
     tft.initR(INITR_BLACKTAB);
