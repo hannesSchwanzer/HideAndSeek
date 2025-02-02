@@ -131,7 +131,7 @@ void Communication::sendGameStart(Position& startPosition, Player& ownPlayer, Pl
 
   for (int i = 0; i < otherPlayerCount; i++) {
     PlayerCommunicationData playerData = preparePlayer(otherPlayer[i]);
-    std::memcpy(payloadPos, &playerData, sizeof(PlayerCommunicationData)));
+    std::memcpy(payloadPos, &playerData, sizeof(PlayerCommunicationData));
     payloadPos += sizeof(PlayerCommunicationData);
   }
 
@@ -241,7 +241,7 @@ void Communication::parseGameStart(LoRaMessage& message, Position& startPosition
   byte currentPlayer = 0;
   for (int i = 0; i < playCountAll; i++) {
     PlayerCommunicationData playerData;
-    std::memcpy(&playerData, payloadPos, sizeof(PlayerCommunicationData)));
+    std::memcpy(&playerData, payloadPos, sizeof(PlayerCommunicationData));
     payloadPos += sizeof(PlayerCommunicationData);
 
     if (playerData.player_address == _localAddress) {

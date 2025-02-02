@@ -1,100 +1,45 @@
-#ifndef GPS_HANDLER_H
-#define GPS_HANDLER_H
+#include "GPSHandler.hpp"
+#include <Arduino.h>
+#include <HardwareSerial.h>
 
-#include <TinyGPS++.h>
-#include <QMC5883LCompass.h>
-#include "Globals.hpp"
+GPSHandler::GPSHandler() : gpsSerial(Serial1) {  // Automatically choose Serial1 (or another port)
+        // No need to pass serial port in the constructor
+}
 
+void GPSHandler::setup() {
+    gpsSerial.begin(9600, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
+    compass.init();
+    calibrateCompass();
+    Serial.println("GPS & Kompass initialisiert.");
+}
 
-class GPSHandler {
-private:
-    TinyGPSPlus gps;                     // GPS-Bibliothek
-    HardwareSerial gpsSerial;           // Serieller Port für GPS
-    QMC5883LCompass compass;         // Kompass
-    int currentAzimuth = 0;     // Azimut als float
+void GPSHandler::calibrateCompass() {
+    compass.setCalibration(-1537, 1266, -1961, 958, -1342, 1492);
+}
 
-
-public:
-    // Konstruktor
-    // GPSHandler(HardwareSerial* serial)
-    //     : gpsSerial(serial) {}
-
-    // Initialisierungsmethode
-    void setup() {
-
-        // TODO:
-        // - Automatisch initialisieren
-        // - Nachschauen wie die pins gesetzt werden
-        gpsSerial = HardwareSerial(1); // RX=17, TX=23
-        gpsSerial.begin(9600);          // GPS-Modul initialisieren
-
-        // Kompass initialisieren
-        compass.init();
-        compass.calibrate();
-        DEBUG_PRINTLN("Kompass initialisiert.");
-        
- 
-    }
-
-    // Methode zum Lesen der GPS-Daten
-    bool readLocation(Position& postion) {
-        while (gpsSerial.available() > 0) {
-            if (gps.encode(gpsSerial.read())) {
-                if (gps.location.isValid()) {
-                    postion.lat = gps.location.lat();
-                    postion.lon = gps.location.lng();
-                    return true;
-                }
+// GPS-Daten abrufen und in die Position-Struktur speichern
+bool GPSHandler::readLocation(Position& position) {
+    while (gpsSerial.available() > 0) {
+        if (gps.encode(gpsSerial.read())) {
+            if (gps.location.isValid()) {
+                position.lat = gps.location.lat();
+                position.lon = gps.location.lng();
+                return true;
             }
         }
-        return false;
     }
+    return false;
+}
 
-    // Latitude ausgeben
-    double getLatitude() {
-        while (gpsSerial.available() > 0) {
-            if (gps.encode(gpsSerial.read())) {
-                if (gps.location.isValid()) {
-                    return gps.location.lat();
-                }
-            }
-        }
-        return 0.0;  // Rückgabe von 0.0, falls ungültige Daten vorliegen
-    }
+// Kompassrichtung abrufen
+int GPSHandler::getCompassHeading() {
+    compass.read();
+    currentAzimuth = compass.getAzimuth();
+    return currentAzimuth;
+}
 
-    // Longitude ausgeben
-    double getLongitude() {
-        while (gpsSerial.available() > 0) {
-            if (gps.encode(gpsSerial.read())) {
-                if (gps.location.isValid()) {
-                    return gps.location.lng();
-                }
-            }
-        }
-        return 0.0;  // Rückgabe von 0.0, falls ungültige Daten vorliegen
-    }
-
-    // Kompass kalibrieren
-    void calibrateCompass() {
-        // Füge hier die Kalibrierungsdaten ein
-        compass.setCalibration(-1537, 1266, -1961, 958, -1342, 1492); 
-        DEBUG_PRINTLN("Kompass kalibriert.");
-    }
-
-    // Methode zur Berechnung der Kompassrichtung
-    int getCompassHeading() {
-        compass.read();  // Werte vom Kompass lesen
-        currentAzimuth = compass.getAzimuth();  // Azimut (Richtung) abrufen
- 
-
-        return currentAzimuth;
-    }
-
-    // Methode zur Berechnung der Kompassrichtung als Text (z.B., N, NE, S, etc.)
-    void getCompassDirection(char* direction) {
-        int azimuth = compass.getAzimuth();  // Azimut (Richtung) abrufen
-        compass.getDirection(direction, azimuth);  // Richtungsbezeichner ermitteln
-    }
-};
-
-#endif
+// Kompassrichtung als Text
+void GPSHandler::getCompassDirection(char* direction) {
+    int azimuth = compass.getAzimuth();
+    compass.getDirection(direction, azimuth);
+}

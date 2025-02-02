@@ -1,5 +1,6 @@
 #include "Game.hpp"
 #include "Communication.hpp"
+#include "Display.hpp"
 #include "Globals.hpp"
 #include "Pins.hpp"
 #include "configValues.hpp"
@@ -420,3 +421,28 @@ int Game::getPlayerIdxFromAddress(HaS_Address address) {
 
   return playerIdx;
 }
+
+
+Game::Game(): 
+  state(),
+  communication(),
+  display(),
+  gpsHandler(),
+  otherPlayerCount(0),
+  startPosition(),
+  lastMessageSendAt(0),
+  foundGame(false),
+  receivedRequestAcceptance(false),
+  startTime(false)
+{
+    // Manually initialize the array `otherPlayers` if Player doesn't have a default constructor
+    for (int i = 0; i < MAX_PLAYERS - 1; i++) {
+        otherPlayers[i] = Player();  // Ensure Player has a default constructor
+    }
+}
+
+
+void initializeMembers() {
+  // TODO
+}
+

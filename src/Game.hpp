@@ -6,7 +6,7 @@
 #include "Player.hpp"
 #include "Globals.hpp"
 #include "Pins.hpp"
-#include "GPSHandler.cpp"
+#include "GPSHandler.hpp"
 
 enum gameState{
   INIT,
@@ -19,6 +19,7 @@ enum gameState{
 
 class Game{
 public:
+    Game();
     void initGame();
     void loopGame();
 
@@ -50,5 +51,6 @@ private:
     int getPlayerIdxFromAddress(HaS_Address address);
     void waitForRestet();
     bool doesAdressExist(HaS_Address adress);
+    void initializeMembers();
  
 };
