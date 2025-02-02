@@ -49,5 +49,6 @@ private:
     void testButtons();
     int getPlayerIdxFromAddress(HaS_Address address);
     void waitForRestet();
+    bool doesAdressExist(HaS_Address adress);
  
 };

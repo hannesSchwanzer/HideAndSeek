@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <queue>
 #include "Globals.hpp"
+#include "Player.hpp"
 
 enum class LoRaMessageType : uint8_t {
     GPS_DATA,
@@ -14,7 +15,7 @@ enum class LoRaMessageType : uint8_t {
     JOINING_REQUEST,
     JOINING_REQUEST_ACCPEPTANCE,
     ACCEPTANCE_ACKNOLEDGMENT,
-    PLAYER_DEAD, // TODO: implement
+    PLAYER_DEAD,
     OTHER,
 };
 
@@ -23,6 +24,11 @@ struct LoRaMessage {
     LoRaMessageType messageType;
     uint8_t payloadLength;
     char payload[100];
+};
+
+struct PlayerCommunicationData {
+    HaS_Address player_address;
+    bool is_hunter;
 };
 
 class Communication {
@@ -34,12 +40,17 @@ public:
     void sendJoiningRequest();
     void sendJoiningRequestAcceptance(uint8_t* macAddress, HaS_Address assignedAddress);
     void sendAcceptanceAcknoledgment(HaS_Address receiverAddress);
-    void sendGPSData(int longitude, int latidute);
+    void sendGPSData(Position& position);
     void sendMessage(LoRaMessage& message);
-    void sendGameStart();
+    void sendGameStart(Position& startPosition, Player& ownPlayer, Player otherPlayer[], byte otherPlayerCount);
+    void sendPlayerDead();
 
-    void parseJoiningRequestAcceptance(uint8_t* macAddress, HaS_Address* assignedAddress);
-    void parseJoiningRequest(uint8_t* macAddress);
+    void parseJoiningRequestAcceptance(LoRaMessage& message, uint8_t* macAddress, HaS_Address* assignedAddress);
+    void parseJoiningRequest(LoRaMessage& message, uint8_t* macAddress);
+    void parseGameStart(LoRaMessage& message, Position& startPosition, Player& ownPlayer, Player* otherPlayer, byte& otherPlayerCount);
+    void parseGpsData(LoRaMessage& message, Position& position);
+
+    PlayerCommunicationData preparePlayer(Player& player);
 
     void printMessage(LoRaMessage message);
     static void setInstance(Communication* instance) {

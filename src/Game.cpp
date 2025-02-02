@@ -20,7 +20,6 @@ void Game::initGame() {
   pinMode(BUTTON_PIN_1, INPUT_PULLUP); // Mit Pull-Up-Widerstand
   pinMode(BUTTON_PIN_2, INPUT_PULLUP); // Mit Pull-Up-Widerstand
   randomSeed(millis());
-  ownPlayer.player_address = random(256);
   setState(INIT);
 }
 
@@ -30,35 +29,36 @@ void Game::setState(gameState state) {
   switch (state) {
   case INIT: {
     display.drawStartScreen();
+    // TODO: Reset everything
     break;
   }
-  
+
   case HOST: {
     otherPlayerCount = 0;
+    ownPlayer.player_address = createNewAdress();
 
-    // startPosition = ; // TODO: replace with call to gps
+    gpsHandler.readLocation(startPosition);
     break;
   }
-  
+
   case SEARCH: {
     communication.sendJoiningRequest();
     lastMessageSendAt = millis();
     break;
   }
-  
+
   case RUNNING: {
     startTime = millis();
     break;
   }
 
   case WON: {
-
     display.resetDisplay();
     display.drawWinningScreen();
     break;
   }
   case DEAD: {
-    
+
     display.resetDisplay();
     display.drawLoosingScreen();
     break;
@@ -95,7 +95,7 @@ void Game::loopSearch() {
         // parse message
         uint8_t macAddressReceived[MAC_ADDRESS_SIZE];
         HaS_Address assignedAddress;
-        communication.parseJoiningRequestAcceptance(macAddress,
+        communication.parseJoiningRequestAcceptance(message, macAddress,
                                                     &assignedAddress);
 
         // Check if message was sent to this device
@@ -118,7 +118,8 @@ void Game::loopSearch() {
         // Check if already joined a game and if message came from host
         if (otherPlayerCount == 1 &&
             message.senderAddress == otherPlayers[0].player_address) {
-          // TODO: parse message
+          communication.parseGameStart(message, startPosition, ownPlayer, otherPlayers,
+                                       otherPlayerCount);
           setState(RUNNING);
         }
         break;
@@ -167,7 +168,7 @@ void Game::loopHost() {
 
         // Extract max address
         uint8_t macAddress[MAC_ADDRESS_SIZE];
-        communication.parseJoiningRequest(macAddress);
+        communication.parseJoiningRequest(message, macAddress);
 
         // Send joining acceptance
         communication.sendJoiningRequestAcceptance(macAddress, assignedAdress);
@@ -177,7 +178,6 @@ void Game::loopHost() {
       case LoRaMessageType::ACCEPTANCE_ACKNOLEDGMENT: {
         // Check which player send the message
         int playerIdx = getPlayerIdxFromAddress(message.senderAddress);
-
 
         // Ingore message if no player was found
         if (playerIdx == -1)
@@ -198,11 +198,17 @@ void Game::loopHost() {
   if (buttonPressed(BUTTON_PIN_1)) {
     state = RUNNING;
     display.resetDisplay();
+    int hunterIdx = random(otherPlayerCount + 2);
+    if (hunterIdx > otherPlayerCount) {
+      ownPlayer.is_hunter = true;
+    } else {
+      otherPlayers[hunterIdx].is_hunter = true;
+    }
+
+    communication.sendGameStart(startPosition, ownPlayer, otherPlayers,
+                                otherPlayerCount);
   }
   delay(500);
-  // TODO:
-  //  Send own position
-  //  random select catcher
 
   // Sanity check
   // Remove players after certain amount of time, if not received an acceptance
@@ -226,20 +232,24 @@ void Game::loopRunning() {
     if (communication.getNextMessage(message)) {
       switch (message.messageType) {
       case LoRaMessageType::GPS_DATA: {
-        Position pos; // TODO: Extract from message
+        Position pos;
+        communication.parseGpsData(message, pos);
+
         int playeridx = getPlayerIdxFromAddress(message.senderAddress);
-        if (playeridx == -1) break;
+        if (playeridx == -1)
+          break;
         otherPlayers[playeridx].position = pos;
 
         break;
       }
       case LoRaMessageType::PLAYER_DEAD: {
         int playeridx = getPlayerIdxFromAddress(message.senderAddress);
-        if (playeridx == -1) break;
+        if (playeridx == -1)
+          break;
         removePlayer(playeridx);
         if (otherPlayerCount == 0) {
           // TODO: Searcher hat gewonnen. Implement
-          }
+        }
         break;
       }
       default:
@@ -250,13 +260,14 @@ void Game::loopRunning() {
 
   // Send position every n minutes
   if (now - lastMessageSendAt >= SEND_POS_INTERVAL) {
-    // TODO: send position
+    communication.sendGPSData(ownPlayer.position);
   }
 
   // LostGame
-  if (!ownPlayer.is_hunter && (buttonPressed(BUTTON_PIN_1) || buttonPressed(BUTTON_PIN_2))) {
+  if (!ownPlayer.is_hunter &&
+      (buttonPressed(BUTTON_PIN_1) || buttonPressed(BUTTON_PIN_2))) {
     setState(DEAD);
-    // TODO: Send message, that you lost
+    communication.sendPlayerDead();
   }
 
   // Sanity check
@@ -272,7 +283,8 @@ void Game::loopRunning() {
   // Remove player if not answering
   int i = 0;
   while (i < otherPlayerCount) {
-    if (now - otherPlayers[i].lastMessageReceivedAt >= REMOVE_PLAYER_NOT_ANSWERING_AFTER) {
+    if (now - otherPlayers[i].lastMessageReceivedAt >=
+        REMOVE_PLAYER_NOT_ANSWERING_AFTER) {
       removePlayer(i);
     } else {
       i++;
@@ -282,13 +294,14 @@ void Game::loopRunning() {
   // Update pos and azimuth
   bool succesfull = gpsHandler.readLocation(ownPlayer.position);
   if (!succesfull) {
-    // TODO: 
+    // TODO:
     DEBUG_PRINTF("Couldn't read location");
   }
   // TODO: Read compass
 
   // Update Display
-  display.drawMap(otherPlayers, ownPlayer, otherPlayerCount, 90); //TODO: Remove placeholder 90
+  display.drawMap(otherPlayers, ownPlayer, otherPlayerCount,
+                  90); // TODO: Remove placeholder 90
 
   delay(1000);
 }
@@ -369,16 +382,31 @@ void Game::removePlayer(int idx) {
 }
 
 HaS_Address Game::createNewAdress() {
-  return 0; // TODO: Implement
+  HaS_Address adress;
+  do {
+    adress = random(256);
+  } while (!doesAdressExist(adress));
+
+  return adress;
+}
+
+bool Game::doesAdressExist(HaS_Address adress) {
+  if (ownPlayer.player_address == adress) {
+    return false;
+  }
+  for (int i = 0; i < otherPlayerCount; i++) {
+    if (otherPlayers[i].player_address == adress)
+      return false;
+  }
+  return true;
 }
 
 void Game::waitForRestet() {
-    
+
   if (buttonPressed(BUTTON_PIN_1) || buttonPressed(BUTTON_PIN_2)) {
     setState(INIT);
   }
   delay(1000);
-
 }
 
 int Game::getPlayerIdxFromAddress(HaS_Address address) {
@@ -392,4 +420,3 @@ int Game::getPlayerIdxFromAddress(HaS_Address address) {
 
   return playerIdx;
 }
-
