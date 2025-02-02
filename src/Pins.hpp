@@ -18,7 +18,7 @@
 
 //Button Pins
 #define BUTTON_PIN_1 36
-#define BUTTON_PIN_2 37
+#define BUTTON_PIN_2 38
 
 //GPS Pins
 #define GPS_RX_PIN 17

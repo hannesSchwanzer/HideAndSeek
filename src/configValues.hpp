@@ -20,6 +20,6 @@
 #define GAME_DURATION (120 * 60 * 1000)
 
 //Button
-#define BUTTON_COOLDOWN 1000 //5sec nur zum testen sonnst 1000
+#define BUTTON_COOLDOWN 2000 //5sec nur zum testen sonnst 1000
 
 

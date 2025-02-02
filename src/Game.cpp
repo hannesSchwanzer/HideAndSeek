@@ -30,6 +30,7 @@ void Game::setState(gameState state) {
   switch (state) {
   case INIT: {
     display.drawStartScreen();
+    delay(1000);
     // TODO: Reset everything
     break;
   }
@@ -70,15 +71,14 @@ void Game::setState(gameState state) {
 void Game::loopInit() {
   if (buttonPressed(BUTTON_PIN_1)) {
     setState(HOST);
-    display.resetDisplay();
   } else if (buttonPressed(BUTTON_PIN_2)) {
     setState(SEARCH);
-    display.resetDisplay();
   }
   delay(500);
 }
 
 void Game::loopSearch() {
+  display.resetDisplay();
   display.drawWaitingScreen(false, otherPlayerCount);
   // Handle incoming messages
   while (communication.hasMessage()) {
@@ -142,8 +142,8 @@ void Game::loopSearch() {
 }
 
 void Game::loopHost() {
+  display.resetDisplay();
   display.drawWaitingScreen(true, otherPlayerCount);
-
   unsigned long now = millis();
 
   // Handle incoming messages
@@ -198,7 +198,6 @@ void Game::loopHost() {
 
   if (buttonPressed(BUTTON_PIN_1)) {
     state = RUNNING;
-    display.resetDisplay();
     int hunterIdx = random(otherPlayerCount + 2);
     if (hunterIdx > otherPlayerCount) {
       ownPlayer.is_hunter = true;
