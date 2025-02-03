@@ -4,6 +4,7 @@
 #include "Globals.hpp"
 #include "Pins.hpp"
 #include "configValues.hpp"
+#include "esp32-hal-gpio.h"
 #include "esp32-hal.h"
 #include <cstdint>
 #include <cstring>
@@ -18,8 +19,8 @@ void Game::initGame() {
   display.displaySetup();
   communication.setup();
   gpsHandler.setup();
-  pinMode(BUTTON_PIN_1, INPUT_PULLUP); // Mit Pull-Up-Widerstand
-  pinMode(BUTTON_PIN_2, INPUT_PULLUP); // Mit Pull-Up-Widerstand
+  pinMode(BUTTON_PIN_1, INPUT_PULLDOWN); // Mit Pull-Up-Widerstand
+  pinMode(BUTTON_PIN_2, INPUT_PULLDOWN); // Mit Pull-Up-Widerstand
   randomSeed(millis());
   setState(INIT);
 }
@@ -84,6 +85,7 @@ void Game::loopSearch() {
   while (communication.hasMessage()) {
     LoRaMessage message;
     if (communication.getNextMessage(message)) {
+      communication.printMessage(message);
       switch (message.messageType) {
       case LoRaMessageType::JOINING_REQUEST_ACCPEPTANCE: {
         // Get own mac address
@@ -112,6 +114,8 @@ void Game::loopSearch() {
           // Send acceptance and set local address
           communication.setLocalAddress(assignedAddress);
           communication.sendAcceptanceAcknoledgment(message.senderAddress);
+
+          foundGame = true;
         }
         break;
       }
@@ -129,6 +133,11 @@ void Game::loopSearch() {
         break;
       }
     }
+  }
+
+
+  if (buttonPressed(BUTTON_PIN_2)) {
+    setState(INIT);
   }
 
   if (foundGame && millis() - otherPlayers[0].lastMessageReceivedAt >
@@ -149,7 +158,9 @@ void Game::loopHost() {
   // Handle incoming messages
   while (communication.hasMessage()) {
     LoRaMessage message;
+
     if (communication.getNextMessage(message)) {
+      communication.printMessage(message);
       switch (message.messageType) {
       case LoRaMessageType::JOINING_REQUEST: {
         // Check if there is space for another player
@@ -197,7 +208,7 @@ void Game::loopHost() {
   }
 
   if (buttonPressed(BUTTON_PIN_1)) {
-    state = RUNNING;
+    setState(RUNNING);
     int hunterIdx = random(otherPlayerCount + 2);
     if (hunterIdx > otherPlayerCount) {
       ownPlayer.is_hunter = true;
@@ -230,6 +241,7 @@ void Game::loopRunning() {
   while (communication.hasMessage()) {
     LoRaMessage message;
     if (communication.getNextMessage(message)) {
+      communication.printMessage(message);
       switch (message.messageType) {
       case LoRaMessageType::GPS_DATA: {
         Position pos;
@@ -261,6 +273,7 @@ void Game::loopRunning() {
   // Send position every n minutes
   if (now - lastMessageSendAt >= SEND_POS_INTERVAL) {
     communication.sendGPSData(ownPlayer.position);
+    lastMessageSendAt = now;
   }
 
   // LostGame
@@ -268,6 +281,7 @@ void Game::loopRunning() {
       (buttonPressed(BUTTON_PIN_1) || buttonPressed(BUTTON_PIN_2))) {
     setState(DEAD);
     communication.sendPlayerDead();
+    lastMessageSendAt = now;
   }
 
   // Sanity check
