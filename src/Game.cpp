@@ -292,7 +292,7 @@ void Game::loopRunning() {
           break;
         removePlayer(playeridx);
         if (otherPlayerCount == 0) {
-          // TODO: Searcher hat gewonnen. Implement
+          setState(WON);
         }
         break;
       }
