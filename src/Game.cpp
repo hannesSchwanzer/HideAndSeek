@@ -54,6 +54,7 @@ void Game::setState(gameState state) {
     ownPlayer.player_address = createNewAdress();
 
     gpsHandler.readLocation(startPosition);
+      DEBUG_PRINTF("Startpos: Lat: %f, Long: %f\n", startPosition.lat, startPosition.lon);
     break;
   }
 
@@ -360,6 +361,8 @@ void printButtonState(int pin) {
 }
 
 void Game::loopGame() {
+  readGPS();
+
   switch (state) {
   case INIT:
     DEBUG_PRINTLN("State: INIT");
@@ -496,4 +499,10 @@ void Game::resetVariables() {
   foundGame = false;
   receivedRequestAcceptance = false;
   startTime = 0;
+}
+
+void Game::readGPS(){
+  Position po;
+  gpsHandler.readLocation(po);
+  DEBUG_PRINTF("Lat: %f, Long: %f\n", po.lat, po.lon);
 }

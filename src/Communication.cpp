@@ -95,6 +95,7 @@ void Communication::sendGPSData(Position& position) {
   message.payloadLength = sizeof(Position);
 
   std::memcpy(message.payload, &position, sizeof(Position));
+  DEBUG_PRINTF("OTHER PLAYER - Lat: %f, Long: %f\n", position.lat, position.lon);
 
   sendMessage(message);
 }

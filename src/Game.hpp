@@ -46,4 +46,5 @@ private:
   void waitForRestet();
   bool doesAdressExist(HaS_Address adress);
   void resetVariables();
+  void readGPS();
 };

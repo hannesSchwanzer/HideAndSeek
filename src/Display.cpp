@@ -77,16 +77,16 @@ void Display::drawMap(Player players[], Player ownPlayer, byte otherPlyaerCount,
   unsigned long currentTime = millis();
   
   if (ownPlayer.is_hunter){
-    drawMapExtras("Hunter", GAME_DURATION - gameTime);
+    drawMapExtras("Hunter", (GAME_DURATION - gameTime)/1000);
   }else{
-    drawMapExtras("Hide", GAME_DURATION - gameTime);
+    drawMapExtras("Hide", (GAME_DURATION - gameTime)/1000);
   }
   
   // Andere Koordinaten zeichnen
   for (byte i = 0; i < otherPlyaerCount; i++) {
     int x, y;
     transformAndRotate(players[i].position.lat, players[i].position.lon, ownPlayer.position.lat, ownPlayer.position.lon,  x, y, azimuth);
-    
+    DEBUG_PRINTF("OTHER PLAYER - Lat: %f, Long: %f\n", players[i].position.lat, players[i].position.lon);
 
     if (players[i].is_hunter && gameTime >= HUNTER_REVEAL) {
       tft.fillCircle(x, y, 3, ST7735_RED); // Punkte darstellen
@@ -113,9 +113,9 @@ void Display::drawString(const char* str) {
 
 void Display::drawMapExtras(const char* str, int time){
   tft.setTextColor(ST77XX_WHITE);
-  tft.setCursor(20, 30);
+  tft.setCursor(10, 10);
   tft.print(str);
-  tft.setCursor(20, 40);
+  tft.setCursor(80, 10);
   tft.print(time);
 
 }
