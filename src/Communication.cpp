@@ -141,6 +141,7 @@ void Communication::sendGameStart(Position& startPosition, Player& ownPlayer, Pl
 
 void Communication::sendMessage(LoRaMessage &message) {
   DEBUG_PRINTLN("Sending Message");
+  printMessage(message);
 
   LoRa.beginPacket();
   LoRa.write(message.senderAddress);                     // Send as binary
@@ -209,6 +210,7 @@ void Communication::printMessage(LoRaMessage message) {
   for (int i = 0; i < message.payloadLength; i++) {
     DEBUG_PRINT((byte)message.payload[i]);
   }
+  DEBUG_PRINT("\n");
 }
 
 void Communication::parseJoiningRequestAcceptance(

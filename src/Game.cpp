@@ -7,6 +7,7 @@
 #include "esp32-hal-gpio.h"
 #include "esp32-hal.h"
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 
 #include "esp_err.h"
@@ -32,7 +33,7 @@ void Game::setState(gameState state) {
   case INIT: {
     display.drawStartScreen();
     delay(1000);
-    // TODO: Reset everything
+    resetVariables();
     break;
   }
 
@@ -116,6 +117,8 @@ void Game::loopSearch() {
           communication.sendAcceptanceAcknoledgment(message.senderAddress);
 
           foundGame = true;
+
+          // TODO: Show that game was found
         }
         break;
       }
@@ -123,8 +126,8 @@ void Game::loopSearch() {
         // Check if already joined a game and if message came from host
         if (otherPlayerCount == 1 &&
             message.senderAddress == otherPlayers[0].player_address) {
-          communication.parseGameStart(message, startPosition, ownPlayer, otherPlayers,
-                                       otherPlayerCount);
+          communication.parseGameStart(message, startPosition, ownPlayer,
+                                       otherPlayers, otherPlayerCount);
           setState(RUNNING);
         }
         break;
@@ -135,16 +138,14 @@ void Game::loopSearch() {
     }
   }
 
-
   if (buttonPressed(BUTTON_PIN_2)) {
     setState(INIT);
   }
 
-  if (foundGame && millis() - otherPlayers[0].lastMessageReceivedAt >
-                       CANCEL_WAITING_FOR_START_AFTER) {
-    setState(INIT);
-  } else if (!foundGame && millis() - lastMessageSendAt > CANCEL_SEARCH_AFTER) {
-    setState(INIT);
+  if (!foundGame &&
+      millis() - lastMessageSendAt > RESEND_JOINING_MESSAGE_INTERVAL) {
+    communication.sendJoiningRequest();
+    lastMessageSendAt = millis();
   }
 
   delay(1000);
@@ -210,6 +211,11 @@ void Game::loopHost() {
   if (buttonPressed(BUTTON_PIN_1)) {
     setState(RUNNING);
     int hunterIdx = random(otherPlayerCount + 2);
+    DEBUG_PRINT("Hunter id: ");
+    DEBUG_PRINT(hunterIdx);
+    DEBUG_PRINT("\n");
+
+
     if (hunterIdx > otherPlayerCount) {
       ownPlayer.is_hunter = true;
     } else {
@@ -220,6 +226,10 @@ void Game::loopHost() {
                                 otherPlayerCount);
   }
   delay(500);
+
+  if (buttonPressed(BUTTON_PIN_2)) {
+    setState(INIT);
+  }
 
   // Sanity check
   // Remove players after certain amount of time, if not received an acceptance
@@ -318,6 +328,13 @@ void Game::loopRunning() {
                   90); // TODO: Remove placeholder 90
 
   delay(1000);
+}
+
+void printButtonState(int pin) {
+  DEBUG_PRINT("Pin ");
+  DEBUG_PRINT(pin);
+  DEBUG_PRINT(" state:");
+  DEBUG_PRINTLN(digitalRead(pin) == HIGH ? "High" : "LOW");
 }
 
 void Game::loopGame() {
@@ -435,27 +452,26 @@ int Game::getPlayerIdxFromAddress(HaS_Address address) {
   return playerIdx;
 }
 
-
-Game::Game(): 
-  state(),
-  communication(),
-  display(),
-  gpsHandler(),
-  otherPlayerCount(0),
-  startPosition(),
-  lastMessageSendAt(0),
-  foundGame(false),
-  receivedRequestAcceptance(false),
-  startTime(false)
-{
-    // Manually initialize the array `otherPlayers` if Player doesn't have a default constructor
-    for (int i = 0; i < MAX_PLAYERS - 1; i++) {
-        otherPlayers[i] = Player();  // Ensure Player has a default constructor
-    }
+Game::Game()
+    : state(), communication(), display(), gpsHandler(), otherPlayerCount(0),
+      startPosition(), lastMessageSendAt(0), foundGame(false),
+      receivedRequestAcceptance(false), startTime(false) {
+  // Manually initialize the array `otherPlayers` if Player doesn't have a
+  // default constructor
+  for (int i = 0; i < MAX_PLAYERS - 1; i++) {
+    otherPlayers[i] = Player(); // Ensure Player has a default constructor
+  }
 }
 
-
-void initializeMembers() {
-  // TODO
+void Game::resetVariables() {
+  state = INIT;
+  communication.setLocalAddress(0);
+  memset(otherPlayers, 0, sizeof(otherPlayers));
+  ownPlayer = {};
+  otherPlayerCount = 0;
+  startPosition = {};
+  lastMessageSendAt = 0;
+  foundGame = false;
+  receivedRequestAcceptance = false;
+  startTime = 0;
 }
-

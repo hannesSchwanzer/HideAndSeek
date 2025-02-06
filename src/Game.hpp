@@ -51,6 +51,6 @@ private:
     int getPlayerIdxFromAddress(HaS_Address address);
     void waitForRestet();
     bool doesAdressExist(HaS_Address adress);
-    void initializeMembers();
+    void resetVariables();
  
 };
