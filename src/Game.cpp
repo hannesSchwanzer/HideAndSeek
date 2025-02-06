@@ -26,7 +26,8 @@ void Game::initGame() {
   if (!gps_sucess) {
     display.resetDisplay();
     display.drawString("Failed to get a gps Signal");
-    while (true);
+    while (true)
+      ;
   }
 
   display.resetDisplay();
@@ -54,7 +55,8 @@ void Game::setState(gameState state) {
     ownPlayer.player_address = createNewAdress();
 
     gpsHandler.readLocation(startPosition);
-      DEBUG_PRINTF("Startpos: Lat: %f, Long: %f\n", startPosition.lat, startPosition.lon);
+    DEBUG_PRINTF("Startpos: Lat: %f, Long: %f\n", startPosition.lat,
+                 startPosition.lon);
     communication.setLocalAddress(ownPlayer.player_address);
     break;
   }
@@ -66,6 +68,7 @@ void Game::setState(gameState state) {
   }
 
   case RUNNING: {
+    // compass.setup();
     startTime = millis();
     display.setCenter(startPosition);
     if (ownPlayer.is_hunter) {
@@ -288,7 +291,7 @@ void Game::loopRunning() {
       case LoRaMessageType::GPS_DATA: {
         Position pos;
         communication.parseGpsData(message, pos);
-    DEBUG_PRINTF("Pos Lat: %f, Long: %f\n", pos.lat, pos.lon);
+        DEBUG_PRINTF("Pos Lat: %f, Long: %f\n", pos.lat, pos.lon);
 
         int playeridx = getPlayerIdxFromAddress(message.senderAddress);
         if (playeridx == -1)
@@ -357,8 +360,8 @@ void Game::loopRunning() {
     DEBUG_PRINTF("Couldn't read location");
   }
   // Update Display
-  display.drawMap(otherPlayers, ownPlayer, otherPlayerCount, compass.getA(),
-                  now - startTime);
+  display.drawMap(otherPlayers, ownPlayer, otherPlayerCount,
+                  compass.getAzimuth(), now - startTime);
 
   delay(500);
 }
@@ -511,7 +514,7 @@ void Game::resetVariables() {
   startTime = 0;
 }
 
-void Game::readGPS(){
+void Game::readGPS() {
   Position po;
   gpsHandler.readLocation(po);
   DEBUG_PRINTF("Lat: %f, Long: %f\n", po.lat, po.lon);
