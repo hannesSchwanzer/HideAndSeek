@@ -55,6 +55,7 @@ void Game::setState(gameState state) {
 
     gpsHandler.readLocation(startPosition);
       DEBUG_PRINTF("Startpos: Lat: %f, Long: %f\n", startPosition.lat, startPosition.lon);
+    communication.setLocalAddress(ownPlayer.player_address);
     break;
   }
 
