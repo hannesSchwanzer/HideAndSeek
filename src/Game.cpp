@@ -279,6 +279,7 @@ void Game::loopRunning() {
       case LoRaMessageType::GPS_DATA: {
         Position pos;
         communication.parseGpsData(message, pos);
+    DEBUG_PRINTF("Pos Lat: %f, Long: %f\n", pos.lat, pos.lon);
 
         int playeridx = getPlayerIdxFromAddress(message.senderAddress);
         if (playeridx == -1)
@@ -361,7 +362,7 @@ void printButtonState(int pin) {
 }
 
 void Game::loopGame() {
-  readGPS();
+  // readGPS();
 
   switch (state) {
   case INIT:
