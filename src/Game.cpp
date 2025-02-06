@@ -73,6 +73,8 @@ void Game::setState(gameState state) {
     } else {
       DEBUG_PRINTLN("Hide yourself");
     }
+    gpsHandler.readLocation(ownPlayer.position);
+    communication.sendGPSData(ownPlayer.position);
     break;
   }
 
@@ -91,6 +93,11 @@ void Game::setState(gameState state) {
 }
 
 void Game::loopInit() {
+  // Throw away messages
+  while (communication.hasMessage()) {
+    LoRaMessage message;
+    communication.getNextMessage(message);
+  }
   if (buttonPressed(BUTTON_PIN_1)) {
     setState(HOST);
   } else if (buttonPressed(BUTTON_PIN_2)) {
