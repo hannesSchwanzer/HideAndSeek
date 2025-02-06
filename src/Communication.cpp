@@ -95,7 +95,7 @@ void Communication::sendGPSData(Position& position) {
   message.payloadLength = sizeof(Position);
 
   std::memcpy(message.payload, &position, sizeof(Position));
-  DEBUG_PRINTF("OTHER PLAYER - Lat: %f, Long: %f\n", position.lat, position.lon);
+  DEBUG_PRINTF("Sending: - Lat: %f, Long: %f\n", position.lat, position.lon);
 
   sendMessage(message);
 }
@@ -232,20 +232,25 @@ void Communication::parseJoiningRequest(LoRaMessage& message, uint8_t *macAddres
 }
 
 void Communication::parseGameStart(LoRaMessage& message, Position& startPosition, Player& ownPlayer, Player* otherPlayer, byte& otherPlayerCount) {
+  DEBUG_PRINTLN("Parsing Game Start");
   char* payloadPos = message.payload;
 
   std::memcpy(&startPosition, payloadPos, sizeof(startPosition));
   payloadPos += sizeof(startPosition);
+  DEBUG_PRINTF("Startpos: - Lat: %f, Long: %f\n", startPosition.lat, startPosition.lon);
+
   byte playCountAll;
   std::memcpy(&playCountAll, payloadPos, sizeof(playCountAll));
   payloadPos += sizeof(playCountAll);
   otherPlayerCount = playCountAll - 1;
+  DEBUG_PRINTF("Otherplayercount: - Lat: %d\n", otherPlayerCount);
 
   byte currentPlayer = 0;
   for (int i = 0; i < playCountAll; i++) {
     PlayerCommunicationData playerData;
     std::memcpy(&playerData, payloadPos, sizeof(PlayerCommunicationData));
     payloadPos += sizeof(PlayerCommunicationData);
+    DEBUG_PRINTF("Player %d: - Address: %d, isHunter: %d\n", i, playerData.player_address, playerData.is_hunter);
 
     if (playerData.player_address == _localAddress) {
       ownPlayer = {.player_address = _localAddress,
@@ -265,6 +270,7 @@ void Communication::parseGameStart(LoRaMessage& message, Position& startPosition
 
 void Communication::parseGpsData(LoRaMessage& message, Position& position) {
   std::memcpy(&position, message.payload, sizeof(Position));
+  DEBUG_PRINTF("Parsing: - Lat: %f, Long: %f\n", position.lat, position.lon);
 }
 
 
