@@ -40,10 +40,6 @@ void GPSHandler::calibrateCompass() {
 
 // GPS-Daten abrufen und in die Position-Struktur speichern
 bool GPSHandler::readLocation(Position& position) {
-    // position = {50.098092, 8.215985};
-    position.lat = 50.098092;
-    position.lon = 8.215985;
-    return true;
     while (gpsSerial.available() > 0) {
         if (gps.encode(gpsSerial.read())) {
             if (gps.location.isValid()) {

@@ -142,6 +142,7 @@ void Game::loopSearch() {
           // Send acceptance and set local address
           communication.setLocalAddress(assignedAddress);
           communication.sendAcceptanceAcknoledgment(message.senderAddress);
+          lastMessageSendAt = millis();
 
           foundGame = true;
 
