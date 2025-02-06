@@ -7,6 +7,7 @@
 #include "Globals.hpp"
 #include "Pins.hpp"
 #include "GPSHandler.hpp"
+#include "Compass.hpp"
 
 enum gameState{
   INIT,
@@ -28,6 +29,7 @@ private:
     Communication communication;
     Display display;
     GPSHandler gpsHandler;
+    Compass compass;
     Player otherPlayers[MAX_PLAYERS-1];
     Player ownPlayer;
     byte otherPlayerCount;

@@ -1,9 +1,5 @@
 #include "Game.hpp"
-#include "Communication.hpp"
-#include "Display.hpp"
-#include "Globals.hpp"
-#include "Pins.hpp"
-#include "configValues.hpp"
+
 #include "esp32-hal-gpio.h"
 #include "esp32-hal.h"
 #include <cstdint>
@@ -20,6 +16,7 @@ void Game::initGame() {
   display.displaySetup();
   communication.setup();
   gpsHandler.setup();
+  compass.setup();
   pinMode(BUTTON_PIN_1, INPUT_PULLDOWN); // Mit Pull-Up-Widerstand
   pinMode(BUTTON_PIN_2, INPUT_PULLDOWN); // Mit Pull-Up-Widerstand
   randomSeed(millis());
@@ -53,6 +50,7 @@ void Game::setState(gameState state) {
 
   case RUNNING: {
     startTime = millis();
+    display.setCenter(startPosition);
     break;
   }
 
@@ -129,6 +127,7 @@ void Game::loopSearch() {
           communication.parseGameStart(message, startPosition, ownPlayer,
                                        otherPlayers, otherPlayerCount);
           setState(RUNNING);
+          return;
         }
         break;
       }
@@ -140,6 +139,7 @@ void Game::loopSearch() {
 
   if (buttonPressed(BUTTON_PIN_2)) {
     setState(INIT);
+    return;
   }
 
   if (!foundGame &&
@@ -224,11 +224,13 @@ void Game::loopHost() {
 
     communication.sendGameStart(startPosition, ownPlayer, otherPlayers,
                                 otherPlayerCount);
+    return;
   }
   delay(500);
 
   if (buttonPressed(BUTTON_PIN_2)) {
     setState(INIT);
+    return;
   }
 
   // Sanity check
@@ -299,8 +301,11 @@ void Game::loopRunning() {
   if (now - startTime >= GAME_DURATION) {
     if (ownPlayer.is_hunter) {
       setState(DEAD);
+      return;
     } else {
       setState(WON);
+      return;
+
     }
   }
 
@@ -321,13 +326,12 @@ void Game::loopRunning() {
     // TODO:
     DEBUG_PRINTF("Couldn't read location");
   }
-  // TODO: Read compass
-
   // Update Display
   display.drawMap(otherPlayers, ownPlayer, otherPlayerCount,
-                  90); // TODO: Remove placeholder 90
+                  compass.getA(), now-startTime);
 
-  delay(1000);
+
+  delay(500);
 }
 
 void printButtonState(int pin) {

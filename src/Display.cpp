@@ -1,8 +1,3 @@
-#include <Adafruit_GFX.h>    // Core graphics library
-#include <Adafruit_ST7735.h> // Hardware-specific library for ST7735
-#include <SPI.h> 
-#include <math.h>
-#include "Pins.hpp"
 #include "Display.hpp"
 
 Display::Display() 
@@ -19,18 +14,22 @@ float Display::haversine(float lat1, float lon1, float lat2, float lon2) {
   return R * c;
 }
 
+void Display::setCenter(Position center) {
+  fieldCenter = center;
+}
 
-void Display::transformAndRotate(float lat, float lon, float ownLat, float ownLon, int &x, int &y, byte currentAzimuth) {
+void Display::transformAndRotate(float lat, float lon, float ownLat, float ownLon, int &x, int &y, int currentAzimuth) {
     float distance = haversine(ownLat, ownLon, lat, lon);
     float angle = atan2(lat - ownLat, lon - ownLon); // Richtung berechnen
-    // Kombiniere die Rotationen
-    float azimuthRad = radians(currentAzimuth);
-    DEBUG_PRINTF("Azimuth - rad: %d\n", currentAzimuth);
-    float totalAngle = angle + azimuthRad;
-    if (distance > MAX_DISTANCE) distance = MAX_DISTANCE;
 
-    // Normalisiere Distanz auf den Bildschirmradius (vorläufig)
-    float normDistance = (distance / MAX_DISTANCE) * (SCREEN_WIDTH / 2 - 1); // Randabstand
+    float azimuthRad = radians(currentAzimuth);
+    float totalAngle = angle + azimuthRad;
+
+    // Begrenze die Distanz auf die maximale Ansichtsdistanz
+    if (distance > VIEW_DISTANCE) distance = VIEW_DISTANCE;
+
+    // Normalisiere Distanz auf den sichtbaren Bereich
+    float normDistance = (distance / VIEW_DISTANCE) * (SCREEN_WIDTH / 2 - 1); // Randabstand
 
     // Transformiere und rotiere
     float rotatedX = normDistance * cos(totalAngle) - normDistance * sin(totalAngle);
@@ -43,15 +42,17 @@ void Display::transformAndRotate(float lat, float lon, float ownLat, float ownLo
     // Begrenze die Pixelkoordinaten, falls sie außerhalb des sichtbaren Bereichs liegen
     x = max(0, min(SCREEN_WIDTH - 1, x));
     y = max(0, min(SCREEN_HEIGHT - 1, y));
-    //DEBUG_PRINTF("x: %d, y: %d\n", x, y);
 }
 
-
-
-void Display::drawMap(Player players[], Player ownPlayer, byte otherPlyaerCount, byte azimuth) {
+void Display::drawMap(Player players[], Player ownPlayer, byte otherPlyaerCount, int azimuth, unsigned long gameTime) {
   // Eigene Position zeichnen (Pfeil in der Mitte)
   //SPI.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
   tft.fillScreen(ST7735_BLACK);
+  //wenn das center nicht gesetzt ist, wird die map nicht gezeichnet
+  if (fieldCenter.lat == 0.0 && fieldCenter.lon == 0.0) {
+    DEBUG_PRINTF("CENTER NOCH NICHT GEZEICHNET\n");
+    return;
+  }
 
   tft.fillTriangle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 5,
                    SCREEN_WIDTH / 2 - 5, SCREEN_HEIGHT / 2 + 5,
@@ -59,16 +60,40 @@ void Display::drawMap(Player players[], Player ownPlayer, byte otherPlyaerCount,
                    ST7735_RED);
   DEBUG_PRINTF("Own position drawn\n");
   DEBUG_PRINTF("Own Lat: %f, Own Lon: %f\n", ownPlayer.position.lat, ownPlayer.position.lon);
+
+    // **Spielfeld-Kreis zeichnen**
+  int circleX, circleY;
+  transformAndRotate(fieldCenter.lat, fieldCenter.lon, ownPlayer.position.lat, ownPlayer.position.lon, circleX, circleY, azimuth);
+
+  // Radius auf den Bildschirm skalieren
+  float screenRadius = (FIELD_RADIUS / VIEW_DISTANCE) * (SCREEN_WIDTH / 2 - 5);
+  // Zeichne roten Kreis (auch wenn außerhalb des Displays)
+
+  unsigned long currentTime = millis();
+
   // Andere Koordinaten zeichnen
   for (byte i = 0; i < otherPlyaerCount; i++) {
     int x, y;
     transformAndRotate(players[i].position.lat, players[i].position.lon, ownPlayer.position.lat, ownPlayer.position.lon,  x, y, azimuth);
-    tft.fillCircle(x, y, 3, ST7735_GREEN); // Punkte darstellen
+    
+
+    if (players[i].is_hunter && gameTime >= HUNTER_REVEAL) {
+      tft.fillCircle(x, y, 3, ST7735_RED); // Punkte darstellen
+    } else {
+      tft.fillCircle(x, y, 3, ST7735_GREEN); // Punkte darstellen
+    }
   
   }
+  tft.drawCircle(circleX, circleY, screenRadius, ST7735_BLUE);
+
   DEBUG_PRINTF("Map drawn\n");
   
 }
+
+
+
+//draw menue Sceens
+
 
 void Display::drawStartScreen() {
   tft.setTextColor(ST77XX_WHITE);
@@ -117,6 +142,5 @@ void Display::resetDisplay(){
 void Display::displaySetup(){
     tft.initR(INITR_BLACKTAB);
     tft.fillScreen(ST7735_BLACK);
-
      // Display initialisiere
 }
