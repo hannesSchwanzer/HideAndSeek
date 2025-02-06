@@ -1,5 +1,6 @@
 #include "Game.hpp"
 
+#include "Globals.hpp"
 #include "esp32-hal-gpio.h"
 #include "esp32-hal.h"
 #include <cstdint>
@@ -14,11 +15,25 @@ unsigned long lastTimeButtonPressed = 0;
 
 void Game::initGame() {
   display.displaySetup();
+
+  display.resetDisplay();
+  display.drawString("Loading LoRa");
   communication.setup();
-  gpsHandler.setup();
+
+  display.resetDisplay();
+  display.drawString("Loading GPS");
+  bool gps_sucess = gpsHandler.setup();
+  if (!gps_sucess) {
+    display.resetDisplay();
+    display.drawString("Failed to get a gps Signal");
+    while (true);
+  }
+
+  display.resetDisplay();
+  display.drawString("Loading compass");
   compass.setup();
-  pinMode(BUTTON_PIN_1, INPUT_PULLDOWN); // Mit Pull-Up-Widerstand
-  pinMode(BUTTON_PIN_2, INPUT_PULLDOWN); // Mit Pull-Up-Widerstand
+  pinMode(BUTTON_PIN_1, INPUT); // Mit Pull-Up-Widerstand
+  pinMode(BUTTON_PIN_2, INPUT); // Mit Pull-Up-Widerstand
   randomSeed(millis());
   setState(INIT);
 }
@@ -51,6 +66,11 @@ void Game::setState(gameState state) {
   case RUNNING: {
     startTime = millis();
     display.setCenter(startPosition);
+    if (ownPlayer.is_hunter) {
+      DEBUG_PRINTLN("You are the hunter");
+    } else {
+      DEBUG_PRINTLN("Hide yourself");
+    }
     break;
   }
 
@@ -209,14 +229,12 @@ void Game::loopHost() {
   }
 
   if (buttonPressed(BUTTON_PIN_1)) {
-    setState(RUNNING);
-    int hunterIdx = random(otherPlayerCount + 2);
+    int hunterIdx = random(otherPlayerCount + 1);
     DEBUG_PRINT("Hunter id: ");
     DEBUG_PRINT(hunterIdx);
     DEBUG_PRINT("\n");
 
-
-    if (hunterIdx > otherPlayerCount) {
+    if (hunterIdx >= otherPlayerCount) {
       ownPlayer.is_hunter = true;
     } else {
       otherPlayers[hunterIdx].is_hunter = true;
@@ -224,6 +242,8 @@ void Game::loopHost() {
 
     communication.sendGameStart(startPosition, ownPlayer, otherPlayers,
                                 otherPlayerCount);
+
+    setState(RUNNING);
     return;
   }
   delay(500);
@@ -305,7 +325,6 @@ void Game::loopRunning() {
     } else {
       setState(WON);
       return;
-
     }
   }
 
@@ -327,9 +346,8 @@ void Game::loopRunning() {
     DEBUG_PRINTF("Couldn't read location");
   }
   // Update Display
-  display.drawMap(otherPlayers, ownPlayer, otherPlayerCount,
-                  compass.getA(), now-startTime);
-
+  display.drawMap(otherPlayers, ownPlayer, otherPlayerCount, compass.getA(),
+                  now - startTime);
 
   delay(500);
 }
@@ -473,7 +491,7 @@ void Game::resetVariables() {
   memset(otherPlayers, 0, sizeof(otherPlayers));
   ownPlayer = {};
   otherPlayerCount = 0;
-  startPosition = {};
+  startPosition = {-1000.0, -1000.0};
   lastMessageSendAt = 0;
   foundGame = false;
   receivedRequestAcceptance = false;

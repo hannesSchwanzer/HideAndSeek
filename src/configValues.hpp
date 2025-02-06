@@ -2,8 +2,8 @@
 //Display
 #define SCREEN_WIDTH  128
 #define SCREEN_HEIGHT 160
-#define VIEW_DISTANCE 5000 // in meters
-#define FIELD_RADIUS  10000 // Radius des Spielfelds in Metern
+#define VIEW_DISTANCE 500 // in meters
+#define FIELD_RADIUS  1000 // Radius des Spielfelds in Metern
 
 //Communication
 #define PAYLOAD_SIZE 100
@@ -23,6 +23,8 @@
 #define HUNTER_REVEAL (1 * 60 * 1000)
 
 //Button
-#define BUTTON_COOLDOWN 2000 //5sec nur zum testen sonnst 1000
+#define BUTTON_COOLDOWN 1000 //5sec nur zum testen sonnst 1000
 
+// GPS
+#define WAIT_DURATION_GPS_INIT (2 * 60 * 1000)
 

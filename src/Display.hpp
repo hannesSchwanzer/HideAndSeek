@@ -35,5 +35,5 @@ class Display {
     void drawLoosingScreen();
     void drawWinningScreen();
     void setCenter(Position center);
-
+    void drawString(const char* str);
 };

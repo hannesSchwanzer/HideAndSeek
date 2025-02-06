@@ -15,7 +15,7 @@ private:
 
 public:
     GPSHandler();
-    void setup();
+    bool setup();
     bool readLocation(Position& position);
     void calibrateCompass();
     int getCompassHeading();

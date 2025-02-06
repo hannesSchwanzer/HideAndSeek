@@ -1,16 +1,37 @@
 #include "GPSHandler.hpp"
+#include "Globals.hpp"
 #include <Arduino.h>
 #include <HardwareSerial.h>
+#include "configValues.hpp"
 
 GPSHandler::GPSHandler() : gpsSerial(Serial1) {  // Automatically choose Serial1 (or another port)
         // No need to pass serial port in the constructor
 }
 
-void GPSHandler::setup() {
+bool GPSHandler::setup() {
     gpsSerial.begin(9600, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
     compass.init();
     calibrateCompass();
-    Serial.println("GPS & Kompass initialisiert.");
+
+    unsigned long startTime = millis();
+    Position tempPosition;
+
+    return true;
+    // Wait until a valid GPS signal is found or timeout occurs
+    while (millis() - startTime < WAIT_DURATION_GPS_INIT) {  // 2-minute timeout
+        while (gpsSerial.available() > 0) {
+            if (gps.encode(gpsSerial.read())) {
+                if (gps.location.isValid()) {
+                    DEBUG_PRINTLN("GPS-Signal gefunden!");
+                    return true;  // Exit setup when signal is found
+                }
+            }
+        }
+        delay(500);  // Reduce CPU usage while waiting
+    }
+
+    DEBUG_PRINTLN("Kein GPS-Signal gefunden!");
+    return false;
 }
 
 void GPSHandler::calibrateCompass() {

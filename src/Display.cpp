@@ -47,12 +47,13 @@ void Display::transformAndRotate(float lat, float lon, float ownLat, float ownLo
 void Display::drawMap(Player players[], Player ownPlayer, byte otherPlyaerCount, int azimuth, unsigned long gameTime) {
   // Eigene Position zeichnen (Pfeil in der Mitte)
   //SPI.beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
-  tft.fillScreen(ST7735_BLACK);
   //wenn das center nicht gesetzt ist, wird die map nicht gezeichnet
-  if (fieldCenter.lat == 0.0 && fieldCenter.lon == 0.0) {
+  if (fieldCenter.lat == -1000.0 && fieldCenter.lon == -1000.0) {
     DEBUG_PRINTF("CENTER NOCH NICHT GEZEICHNET\n");
+    drawString("Center couldn't be found");
     return;
   }
+  tft.fillScreen(ST7735_BLACK);
 
   tft.fillTriangle(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 5,
                    SCREEN_WIDTH / 2 - 5, SCREEN_HEIGHT / 2 + 5,
@@ -60,6 +61,7 @@ void Display::drawMap(Player players[], Player ownPlayer, byte otherPlyaerCount,
                    ST7735_RED);
   DEBUG_PRINTF("Own position drawn\n");
   DEBUG_PRINTF("Own Lat: %f, Own Lon: %f\n", ownPlayer.position.lat, ownPlayer.position.lon);
+  DEBUG_PRINTF("Azimuth: %d\n", azimuth);
 
     // **Spielfeld-Kreis zeichnen**
   int circleX, circleY;
@@ -94,6 +96,11 @@ void Display::drawMap(Player players[], Player ownPlayer, byte otherPlyaerCount,
 
 //draw menue Sceens
 
+void Display::drawString(const char* str) {
+  tft.setTextColor(ST77XX_WHITE);
+  tft.setCursor(20, 30);
+  tft.print(str);
+}
 
 void Display::drawStartScreen() {
   tft.setTextColor(ST77XX_WHITE);
