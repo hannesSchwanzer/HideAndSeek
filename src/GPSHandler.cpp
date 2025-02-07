@@ -16,7 +16,6 @@ bool GPSHandler::setup() {
     unsigned long startTime = millis();
     Position tempPosition;
 
-    return true;
     // Wait until a valid GPS signal is found or timeout occurs
     while (millis() - startTime < WAIT_DURATION_GPS_INIT) {  // 2-minute timeout
         while (gpsSerial.available() > 0) {

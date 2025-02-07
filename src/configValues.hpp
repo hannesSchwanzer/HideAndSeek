@@ -26,5 +26,5 @@
 #define BUTTON_COOLDOWN 1000 //5sec nur zum testen sonnst 1000
 
 // GPS
-#define WAIT_DURATION_GPS_INIT (2 * 60 * 1000)
+#define WAIT_DURATION_GPS_INIT (10 * 60 * 1000)
 

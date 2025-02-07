@@ -36,5 +36,6 @@ class Display {
     void drawWinningScreen();
     void setCenter(Position center);
     void drawString(const char* str);
+    void drawStringWithLeaveButton(const char* str);
     void drawMapExtras(const char* str, int time);
 };

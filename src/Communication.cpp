@@ -52,9 +52,6 @@ void Communication::setLocalAddress(HaS_Address localAddress) {
 void Communication::sendJoiningRequest() {
   uint8_t macAddress[MAC_ADDRESS_SIZE];
   esp_err_t ret = esp_wifi_get_mac(WIFI_IF_STA, macAddress);
-  if (ret != ESP_OK) {
-    // TODO: Error?
-  }
 
   LoRaMessage message;
   message.messageType = LoRaMessageType::JOINING_REQUEST;
@@ -182,20 +179,16 @@ void Communication::onReceive(int packetSize) {
 
   LoRaMessage message;
   bool processing_valid =
-      processMessage(packetSize, message); // TODO: Handle Exceptions
-  if (!processing_valid || !isMessageValid(message)) {
+      processMessage(packetSize, message);
+  if (!processing_valid) {
     DEBUG_PRINTLN("Message invalid");
     return;
   }
 
   // Add message to the queue
   if (xQueueSend(messageQueue, &message, 0) != pdTRUE) {
-    DEBUG_PRINTLN("Queue full! Dropping message."); // TODO:
+    DEBUG_PRINTLN("Queue full! Dropping message.");
   }
-}
-
-bool Communication::isMessageValid(LoRaMessage &message) {
-  return true; // TODO:Check for specif message sizes
 }
 
 void Communication::printMessage(LoRaMessage message) {

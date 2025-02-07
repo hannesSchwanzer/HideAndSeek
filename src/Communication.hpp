@@ -67,7 +67,6 @@ private:
 
     void onReceive(int packetSize);
     bool processMessage(int packetSize, LoRaMessage& message);
-    bool isMessageValid(LoRaMessage& message);
 
     static void onReceiveBridge(int packetSize) {
       if (_instance) {

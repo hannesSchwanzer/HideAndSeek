@@ -105,6 +105,14 @@ void Display::drawMap(Player players[], Player ownPlayer, byte otherPlyaerCount,
 
 //draw menue Sceens
 
+void Display::drawStringWithLeaveButton(const char* str) {
+  tft.setTextColor(ST77XX_WHITE);
+  tft.setCursor(20, 30);
+  tft.print(str);
+  tft.setCursor(20, 130);
+  tft.print("R - Leave Game");
+}
+
 void Display::drawString(const char* str) {
   tft.setTextColor(ST77XX_WHITE);
   tft.setCursor(20, 30);

@@ -1,6 +1,7 @@
 #include "Game.hpp"
 
 #include "Globals.hpp"
+#include "configValues.hpp"
 #include "esp32-hal-gpio.h"
 #include "esp32-hal.h"
 #include <cstdint>
@@ -25,7 +26,7 @@ void Game::initGame() {
   bool gps_sucess = gpsHandler.setup();
   if (!gps_sucess) {
     display.resetDisplay();
-    display.drawString("Failed to get a gps Signal");
+    display.drawString("Failed to get a gps Signal.");
     while (true)
       ;
   }
@@ -64,6 +65,9 @@ void Game::setState(gameState state) {
   case SEARCH: {
     communication.sendJoiningRequest();
     lastMessageSendAt = millis();
+
+    display.resetDisplay();
+    display.drawStringWithLeaveButton("Searching ...");
     break;
   }
 
@@ -103,15 +107,15 @@ void Game::loopInit() {
   }
   if (buttonPressed(BUTTON_PIN_1)) {
     setState(HOST);
+    return;
   } else if (buttonPressed(BUTTON_PIN_2)) {
     setState(SEARCH);
+    return;
   }
   delay(500);
 }
 
 void Game::loopSearch() {
-  display.resetDisplay();
-  display.drawWaitingScreen(false, otherPlayerCount);
   // Handle incoming messages
   while (communication.hasMessage()) {
     LoRaMessage message;
@@ -122,9 +126,6 @@ void Game::loopSearch() {
         // Get own mac address
         uint8_t macAddress[MAC_ADDRESS_SIZE];
         esp_err_t ret = esp_wifi_get_mac(WIFI_IF_STA, macAddress);
-        if (ret != ESP_OK) {
-          // TODO: Error?
-        }
 
         // parse message
         uint8_t macAddressReceived[MAC_ADDRESS_SIZE];
@@ -149,7 +150,8 @@ void Game::loopSearch() {
 
           foundGame = true;
 
-          // TODO: Show that game was found
+          display.resetDisplay();
+          display.drawStringWithLeaveButton("Found Game.");
         }
         break;
       }
@@ -305,9 +307,6 @@ void Game::loopRunning() {
         if (playeridx == -1)
           break;
         removePlayer(playeridx);
-        if (otherPlayerCount == 0) {
-          setState(WON);
-        }
         break;
       }
       default:
@@ -328,6 +327,7 @@ void Game::loopRunning() {
     setState(DEAD);
     communication.sendPlayerDead();
     lastMessageSendAt = now;
+    return;
   }
 
   // Sanity check
@@ -356,12 +356,17 @@ void Game::loopRunning() {
   // Update pos and azimuth
   bool succesfull = gpsHandler.readLocation(ownPlayer.position);
   if (!succesfull) {
-    // TODO:
     DEBUG_PRINTF("Couldn't read location");
   }
   // Update Display
   display.drawMap(otherPlayers, ownPlayer, otherPlayerCount,
                   compass.getAzimuth(), now - startTime);
+
+
+  if (otherPlayerCount == 0) {
+    setState(WON);
+    return;
+  }
 
   delay(500);
 }
@@ -474,6 +479,7 @@ void Game::waitForRestet() {
 
   if (buttonPressed(BUTTON_PIN_1) || buttonPressed(BUTTON_PIN_2)) {
     setState(INIT);
+    return;
   }
   delay(1000);
 }
@@ -504,8 +510,18 @@ Game::Game()
 void Game::resetVariables() {
   state = INIT;
   communication.setLocalAddress(0);
-  memset(otherPlayers, 0, sizeof(otherPlayers));
-  ownPlayer = {};
+  for (int i = 0; i < MAX_PLAYERS - 1; i++) {
+    otherPlayers[i] = {.player_address = 0,
+                             .position = {0, 0},
+                             .is_hunter = false,
+                             .lastMessageReceivedAt = 0,
+                             .hasAccepted = 0};
+  }
+  ownPlayer = {.player_address = 0,
+                             .position = {0, 0},
+                             .is_hunter = false,
+                             .lastMessageReceivedAt = 0,
+                             .hasAccepted = 0};
   otherPlayerCount = 0;
   startPosition = {-1000.0, -1000.0};
   lastMessageSendAt = 0;
