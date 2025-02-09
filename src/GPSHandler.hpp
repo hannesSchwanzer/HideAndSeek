@@ -10,14 +10,10 @@ class GPSHandler {
 private:
     TinyGPSPlus gps;
     HardwareSerial& gpsSerial; // Reference to HardwareSerial
-    QMC5883LCompass compass;
     int currentAzimuth = 0;
 
 public:
     GPSHandler();
     bool setup();
     bool readLocation(Position& position);
-    void calibrateCompass();
-    int getCompassHeading();
-    void getCompassDirection(char* direction);
 };

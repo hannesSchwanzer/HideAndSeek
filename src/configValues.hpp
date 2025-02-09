@@ -2,8 +2,8 @@
 //Display
 #define SCREEN_WIDTH  128
 #define SCREEN_HEIGHT 160
-#define VIEW_DISTANCE 200 // in meters
-#define FIELD_RADIUS  1000 // Radius des Spielfelds in Metern
+#define VIEW_DISTANCE 100 // in meters
+#define FIELD_RADIUS  300 // Radius des Spielfelds in Metern
 
 //Communication
 #define PAYLOAD_SIZE 100
@@ -17,7 +17,7 @@
 #define RESEND_JOINING_MESSAGE_INTERVAL (30 * 1000)
 #define REMOVE_PLAYER_NOT_ACCEPTING_AFTER (10 * 1000)
 #define REMOVE_PLAYER_NOT_ANSWERING_AFTER (5 * 60 * 1000)
-#define SEND_POS_INTERVAL (20 * 1000)
+#define SEND_POS_INTERVAL (10 * 1000)
 #define GAME_DURATION (120 * 60 * 1000)
 #define HUNTER_REVEAL (1 * 60 * 1000)
 

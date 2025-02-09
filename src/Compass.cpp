@@ -7,7 +7,7 @@ Compass::Compass()
 void Compass::setup() {
     compass.init();
     delay(1000);
-    // compass.calibrate();
+    compass.calibrate();
 }
 
 float Compass::getAzimuth() {

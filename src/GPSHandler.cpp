@@ -10,14 +10,12 @@ GPSHandler::GPSHandler() : gpsSerial(Serial1) {  // Automatically choose Serial1
 
 bool GPSHandler::setup() {
     gpsSerial.begin(9600, SERIAL_8N1, GPS_RX_PIN, GPS_TX_PIN);
-    compass.init();
-    calibrateCompass();
 
     unsigned long startTime = millis();
     Position tempPosition;
 
     // Wait until a valid GPS signal is found or timeout occurs
-    while (millis() - startTime < WAIT_DURATION_GPS_INIT) {  // 2-minute timeout
+    while (true) {  // 2-minute timeout
         if (readLocation(tempPosition)) {
             DEBUG_PRINTLN("GPS-Signal gefunden!");
             return true;  // Exit setup when signal is found
@@ -29,9 +27,6 @@ bool GPSHandler::setup() {
     return false;
 }
 
-void GPSHandler::calibrateCompass() {
-    compass.setCalibration(-1537, 1266, -1961, 958, -1342, 1492);
-}
 
 // GPS-Daten abrufen und in die Position-Struktur speichern
 bool GPSHandler::readLocation(Position& position) {
@@ -51,15 +46,3 @@ bool GPSHandler::readLocation(Position& position) {
     return false;
 }
 
-// Kompassrichtung abrufen
-int GPSHandler::getCompassHeading() {
-    compass.read();
-    currentAzimuth = compass.getAzimuth();
-    return currentAzimuth;
-}
-
-// Kompassrichtung als Text
-void GPSHandler::getCompassDirection(char* direction) {
-    int azimuth = compass.getAzimuth();
-    compass.getDirection(direction, azimuth);
-}
