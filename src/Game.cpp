@@ -11,6 +11,7 @@
 #include "esp_err.h"
 #include "esp_wifi.h"
 #include "esp_wifi_types.h"
+#include "esp_system.h"
 
 unsigned long lastTimeButtonPressed = 0;
 
@@ -125,16 +126,21 @@ void Game::loopSearch() {
       case LoRaMessageType::JOINING_REQUEST_ACCPEPTANCE: {
         // Get own mac address
         uint8_t macAddress[MAC_ADDRESS_SIZE];
-        esp_err_t ret = esp_wifi_get_mac(WIFI_IF_STA, macAddress);
+        esp_err_t ret = esp_read_mac(macAddress, ESP_MAC_WIFI_STA);
+        if (ret != ESP_OK) {
+          DEBUG_PRINTLN("Problem reading mac address");
+        }
+  // Serial.printf("MAC Address: %02X:%02X:%02X:%02X:%02X:%02X\n",
+  //                 macAddress[0], macAddress[1], macAddress[2], macAddress[3], macAddress[4], macAddress[5]);
 
         // parse message
         uint8_t macAddressReceived[MAC_ADDRESS_SIZE];
         HaS_Address assignedAddress;
-        communication.parseJoiningRequestAcceptance(message, macAddress,
+        communication.parseJoiningRequestAcceptance(message, macAddressReceived,
                                                     &assignedAddress);
 
         // Check if message was sent to this device
-        if (memcmp(macAddress, macAddressReceived, MAC_ADDRESS_SIZE)) {
+        if (memcmp(macAddress, macAddressReceived, MAC_ADDRESS_SIZE) == 0) {
           // Add host to other players
           otherPlayers[0] = {.player_address = message.senderAddress,
                              .position = {0, 0},
@@ -143,10 +149,12 @@ void Game::loopSearch() {
                              .hasAccepted = true};
           otherPlayerCount = 1;
 
+          ownPlayer.player_address = assignedAddress;
           // Send acceptance and set local address
           communication.setLocalAddress(assignedAddress);
           communication.sendAcceptanceAcknoledgment(message.senderAddress);
           lastMessageSendAt = millis();
+          DEBUG_PRINTF("Set local adress to %d\n", assignedAddress);
 
           foundGame = true;
 
@@ -218,6 +226,7 @@ void Game::loopHost() {
         uint8_t macAddress[MAC_ADDRESS_SIZE];
         communication.parseJoiningRequest(message, macAddress);
 
+        DEBUG_PRINTF("Sending Adress: %d\n", assignedAdress);
         // Send joining acceptance
         communication.sendJoiningRequestAcceptance(macAddress, assignedAdress);
 
@@ -257,6 +266,10 @@ void Game::loopHost() {
 
     communication.sendGameStart(startPosition, ownPlayer, otherPlayers,
                                 otherPlayerCount);
+
+    for (int i = 0; i < otherPlayerCount; i++) {
+      DEBUG_PRINTF("Player %d. Adress: %d", i+1, otherPlayers[i].player_address);
+    }
 
     setState(RUNNING);
     return;
@@ -383,27 +396,27 @@ void Game::loopGame() {
 
   switch (state) {
   case INIT:
-    DEBUG_PRINTLN("State: INIT");
+    // DEBUG_PRINTLN("State: INIT");
     loopInit();
     break;
   case HOST:
-    DEBUG_PRINTLN("State: HOST");
+    // DEBUG_PRINTLN("State: HOST");
     loopHost();
     break;
   case SEARCH:
-    DEBUG_PRINTLN("State: SEARCH");
+    // DEBUG_PRINTLN("State: SEARCH");
     loopSearch();
     break;
   case RUNNING:
-    DEBUG_PRINTLN("State: RUNNING");
+    // DEBUG_PRINTLN("State: RUNNING");
     loopRunning();
     break;
   case DEAD:
-    DEBUG_PRINTLN("State: DEAD");
+    // DEBUG_PRINTLN("State: DEAD");
     waitForRestet();
     break;
   case WON:
-    DEBUG_PRINTLN("State: WON");
+    // DEBUG_PRINTLN("State: WON");
     waitForRestet();
     break;
   default:

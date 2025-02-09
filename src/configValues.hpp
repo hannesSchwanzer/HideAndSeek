@@ -2,7 +2,7 @@
 //Display
 #define SCREEN_WIDTH  128
 #define SCREEN_HEIGHT 160
-#define VIEW_DISTANCE 500 // in meters
+#define VIEW_DISTANCE 200 // in meters
 #define FIELD_RADIUS  1000 // Radius des Spielfelds in Metern
 
 //Communication
@@ -12,7 +12,6 @@
 
 
 //Game logic
-#define MAX_DISTANCE 1000 // Maximale Distanz in Metern
 #define MAX_PLAYERS 3
 #define CANCEL_SEARCH_AFTER (10* 60 * 1000)
 #define RESEND_JOINING_MESSAGE_INTERVAL (30 * 1000)

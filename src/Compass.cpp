@@ -39,7 +39,7 @@ float Compass::getAzimuth() {
         // Azimut-Winkel berechnen
     
     azimuth = atan2((float)yCorrected, (float)xCorrected) * 180.0 / PI;
-    Serial.print("Azimuth -- "); Serial.print(azimuth);
+    // Serial.print("Azimuth -- "); Serial.print(azimuth);
     if (azimuth < 0) azimuth += 360;
 
     return azimuth;

@@ -62,9 +62,9 @@ void Display::drawMap(Player players[], Player ownPlayer, byte otherPlyaerCount,
                    SCREEN_WIDTH / 2 - 5, SCREEN_HEIGHT / 2 + 5,
                    SCREEN_WIDTH / 2 + 5, SCREEN_HEIGHT / 2 + 5,
                    ST7735_RED);
-  DEBUG_PRINTF("Own position drawn\n");
-  DEBUG_PRINTF("Own Lat: %f, Own Lon: %f\n", ownPlayer.position.lat, ownPlayer.position.lon);
-  DEBUG_PRINTF("Azimuth: %d\n", azimuth);
+  // DEBUG_PRINTF("Own position drawn\n");
+  // DEBUG_PRINTF("Own Lat: %f, Own Lon: %f\n", ownPlayer.position.lat, ownPlayer.position.lon);
+  // DEBUG_PRINTF("Azimuth: %d\n", azimuth);
 
     // **Spielfeld-Kreis zeichnen**
   int circleX, circleY;
@@ -86,7 +86,7 @@ void Display::drawMap(Player players[], Player ownPlayer, byte otherPlyaerCount,
   for (byte i = 0; i < otherPlyaerCount; i++) {
     int x, y;
     transformAndRotate(players[i].position.lat, players[i].position.lon, ownPlayer.position.lat, ownPlayer.position.lon,  x, y, azimuth);
-    DEBUG_PRINTF("OTHER PLAYER - Lat: %f, Long: %f\n", players[i].position.lat, players[i].position.lon);
+    DEBUG_PRINTF("OTHER PLAYER %d - Lat: %f, Long: %f\n", i + 1, players[i].position.lat, players[i].position.lon);
 
     if (players[i].is_hunter && gameTime >= HUNTER_REVEAL) {
       tft.fillCircle(x, y, 3, ST7735_RED); // Punkte darstellen
@@ -97,7 +97,7 @@ void Display::drawMap(Player players[], Player ownPlayer, byte otherPlyaerCount,
   }
   tft.drawCircle(circleX, circleY, screenRadius, ST7735_BLUE);
 
-  DEBUG_PRINTF("Map drawn\n");
+  // DEBUG_PRINTF("Map drawn\n");
   
 }
 

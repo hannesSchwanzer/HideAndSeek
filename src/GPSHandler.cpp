@@ -18,13 +18,9 @@ bool GPSHandler::setup() {
 
     // Wait until a valid GPS signal is found or timeout occurs
     while (millis() - startTime < WAIT_DURATION_GPS_INIT) {  // 2-minute timeout
-        while (gpsSerial.available() > 0) {
-            if (gps.encode(gpsSerial.read())) {
-                if (gps.location.isValid()) {
-                    DEBUG_PRINTLN("GPS-Signal gefunden!");
-                    return true;  // Exit setup when signal is found
-                }
-            }
+        if (readLocation(tempPosition)) {
+            DEBUG_PRINTLN("GPS-Signal gefunden!");
+            return true;  // Exit setup when signal is found
         }
         delay(500);  // Reduce CPU usage while waiting
     }
@@ -39,7 +35,11 @@ void GPSHandler::calibrateCompass() {
 
 // GPS-Daten abrufen und in die Position-Struktur speichern
 bool GPSHandler::readLocation(Position& position) {
-    while (gpsSerial.available() > 0) {
+    // position = {50.098092, 8.215985};
+    // position = {50.099248, 8.214117};
+    // position = {50.095493, 8.262105};
+    // return true;
+   while (gpsSerial.available() > 0) {
         if (gps.encode(gpsSerial.read())) {
             if (gps.location.isValid()) {
                 position.lat = gps.location.lat();

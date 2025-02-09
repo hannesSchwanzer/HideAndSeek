@@ -51,7 +51,12 @@ void Communication::setLocalAddress(HaS_Address localAddress) {
 
 void Communication::sendJoiningRequest() {
   uint8_t macAddress[MAC_ADDRESS_SIZE];
-  esp_err_t ret = esp_wifi_get_mac(WIFI_IF_STA, macAddress);
+  esp_err_t ret = esp_read_mac(macAddress, ESP_MAC_WIFI_STA);
+  if (ret != ESP_OK) {
+    DEBUG_PRINTLN("Problem reading mac address");
+  }
+  // Serial.printf("MAC Address: %02X:%02X:%02X:%02X:%02X:%02X\n",
+  //                 macAddress[0], macAddress[1], macAddress[2], macAddress[3], macAddress[4], macAddress[5]);
 
   LoRaMessage message;
   message.messageType = LoRaMessageType::JOINING_REQUEST;
@@ -85,7 +90,7 @@ void Communication::sendAcceptanceAcknoledgment(HaS_Address receiverAddress) {
   sendMessage(message);
 }
 
-void Communication::sendGPSData(Position& position) {
+void Communication::sendGPSData(Position &position) {
   LoRaMessage message;
   message.messageType = LoRaMessageType::GPS_DATA;
   message.senderAddress = this->_localAddress;
@@ -97,7 +102,6 @@ void Communication::sendGPSData(Position& position) {
   sendMessage(message);
 }
 
-
 void Communication::sendPlayerDead() {
   LoRaMessage message;
   message.messageType = LoRaMessageType::PLAYER_DEAD;
@@ -107,21 +111,23 @@ void Communication::sendPlayerDead() {
   sendMessage(message);
 }
 
-
-void Communication::sendGameStart(Position& startPosition, Player& ownPlayer, Player otherPlayer[], byte otherPlayerCount) {
+void Communication::sendGameStart(Position &startPosition, Player &ownPlayer,
+                                  Player otherPlayer[], byte otherPlayerCount) {
   LoRaMessage message;
   message.messageType = LoRaMessageType::GAME_START;
   message.senderAddress = this->_localAddress;
-  message.payloadLength = sizeof(startPosition) + sizeof(PlayerCommunicationData) * (1 + otherPlayerCount) + sizeof(otherPlayerCount);
+  message.payloadLength =
+      sizeof(startPosition) +
+      sizeof(PlayerCommunicationData) * (1 + otherPlayerCount) +
+      sizeof(otherPlayerCount);
 
   byte playCountAll = otherPlayerCount + 1;
-  
-  char* payloadPos = message.payload;
+
+  char *payloadPos = message.payload;
   std::memcpy(payloadPos, &startPosition, sizeof(startPosition));
   payloadPos += sizeof(startPosition);
   std::memcpy(payloadPos, &playCountAll, sizeof(playCountAll));
   payloadPos += sizeof(playCountAll);
-
 
   PlayerCommunicationData ownPlayerData = preparePlayer(ownPlayer);
   std::memcpy(payloadPos, &ownPlayerData, sizeof(PlayerCommunicationData));
@@ -135,7 +141,6 @@ void Communication::sendGameStart(Position& startPosition, Player& ownPlayer, Pl
 
   sendMessage(message);
 }
-
 
 void Communication::sendMessage(LoRaMessage &message) {
   DEBUG_PRINTLN("Sending Message");
@@ -178,8 +183,7 @@ void Communication::onReceive(int packetSize) {
   DEBUG_PRINTLN("Received packet '");
 
   LoRaMessage message;
-  bool processing_valid =
-      processMessage(packetSize, message);
+  bool processing_valid = processMessage(packetSize, message);
   if (!processing_valid) {
     DEBUG_PRINTLN("Message invalid");
     return;
@@ -208,29 +212,34 @@ void Communication::printMessage(LoRaMessage message) {
 }
 
 void Communication::parseJoiningRequestAcceptance(
-    LoRaMessage& message, uint8_t *macAddress, HaS_Address *assignedAddress) {
-  char* payloadPos = message.payload;
+    LoRaMessage &message, uint8_t *macAddress, HaS_Address *assignedAddress) {
+  char *payloadPos = message.payload;
 
   for (int i = 0; i < MAC_ADDRESS_SIZE; i++) {
-    macAddress[i] = (uint8_t) *payloadPos;
+    macAddress[i] = (uint8_t)*payloadPos;
     payloadPos += 1;
   }
-  *assignedAddress = (uint8_t) *payloadPos;
+  *assignedAddress = (uint8_t)*payloadPos;
 }
 
-void Communication::parseJoiningRequest(LoRaMessage& message, uint8_t *macAddress) {
+void Communication::parseJoiningRequest(LoRaMessage &message,
+                                        uint8_t *macAddress) {
   for (int i = 0; i < MAC_ADDRESS_SIZE; i++) {
-    macAddress[i] = (uint8_t) message.payload[i];
+    macAddress[i] = (uint8_t)message.payload[i];
   }
 }
 
-void Communication::parseGameStart(LoRaMessage& message, Position& startPosition, Player& ownPlayer, Player* otherPlayer, byte& otherPlayerCount) {
+void Communication::parseGameStart(LoRaMessage &message,
+                                   Position &startPosition, Player &ownPlayer,
+                                   Player *otherPlayer,
+                                   byte &otherPlayerCount) {
   DEBUG_PRINTLN("Parsing Game Start");
-  char* payloadPos = message.payload;
+  char *payloadPos = message.payload;
 
   std::memcpy(&startPosition, payloadPos, sizeof(startPosition));
   payloadPos += sizeof(startPosition);
-  DEBUG_PRINTF("Startpos: - Lat: %f, Long: %f\n", startPosition.lat, startPosition.lon);
+  DEBUG_PRINTF("Startpos: - Lat: %f, Long: %f\n", startPosition.lat,
+               startPosition.lon);
 
   byte playCountAll;
   std::memcpy(&playCountAll, payloadPos, sizeof(playCountAll));
@@ -243,30 +252,30 @@ void Communication::parseGameStart(LoRaMessage& message, Position& startPosition
     PlayerCommunicationData playerData;
     std::memcpy(&playerData, payloadPos, sizeof(PlayerCommunicationData));
     payloadPos += sizeof(PlayerCommunicationData);
-    DEBUG_PRINTF("Player %d: - Address: %d, isHunter: %d\n", i, playerData.player_address, playerData.is_hunter);
+    DEBUG_PRINTF("Player %d: - Address: %d, isHunter: %d\n", i,
+                 playerData.player_address, playerData.is_hunter);
 
     if (playerData.player_address == _localAddress) {
       ownPlayer = {.player_address = _localAddress,
-        .position = {0, 0},
-        .is_hunter = playerData.is_hunter,
-        .lastMessageReceivedAt = millis(),
-        .hasAccepted = true};
+                   .position = {0, 0},
+                   .is_hunter = playerData.is_hunter,
+                   .lastMessageReceivedAt = millis(),
+                   .hasAccepted = true};
     } else {
-      otherPlayer[currentPlayer++] = {.player_address = playerData.player_address,
-        .position = {0, 0},
-        .is_hunter = playerData.is_hunter,
-        .lastMessageReceivedAt = millis(),
-        .hasAccepted = true};
+      otherPlayer[currentPlayer++] = {.player_address =
+                                          playerData.player_address,
+                                      .position = {0, 0},
+                                      .is_hunter = playerData.is_hunter,
+                                      .lastMessageReceivedAt = millis(),
+                                      .hasAccepted = true};
     }
   }
 }
 
-void Communication::parseGpsData(LoRaMessage& message, Position& position) {
+void Communication::parseGpsData(LoRaMessage &message, Position &position) {
   std::memcpy(&position, message.payload, sizeof(Position));
   DEBUG_PRINTF("Parsing: - Lat: %f, Long: %f\n", position.lat, position.lon);
 }
-
-
 
 // Check if there are messages in the queue
 bool Communication::hasMessage() {
@@ -278,12 +287,10 @@ bool Communication::getNextMessage(LoRaMessage &message) {
   return xQueueReceive(messageQueue, &message, 0) == pdTRUE;
 }
 
-
-PlayerCommunicationData Communication::preparePlayer(Player& player) {
+PlayerCommunicationData Communication::preparePlayer(Player &player) {
   PlayerCommunicationData p;
   p.is_hunter = player.is_hunter;
   p.player_address = player.player_address;
 
   return p;
 }
-
